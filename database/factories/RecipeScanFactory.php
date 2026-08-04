@@ -28,7 +28,7 @@ class RecipeScanFactory extends Factory
             'source_path' => 'scans/'.fake()->uuid().'.png',
             'original_filename' => 'recipe.png',
             'provider' => 'gemini',
-            'model' => 'gemini-2.0-flash',
+            'model' => 'gemini-flash-latest',
             'source_kept' => false,
         ];
     }

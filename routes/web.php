@@ -17,6 +17,9 @@ Route::middleware('auth')->group(function () {
     Volt::route('dashboard', 'dashboard')->name('dashboard');
     Volt::route('settings/profile', 'settings.profile')->name('profile');
 
+    Volt::route('recipes/scan', 'scans.create')->name('scans.create');
+    Volt::route('scans/{scan}', 'scans.show')->name('scans.show');
+
     Volt::route('recipes/create', 'recipes.manage')->name('recipes.create');
     Volt::route('recipes/{recipe}', 'recipes.show')->name('recipes.show');
     Volt::route('recipes/{recipe}/edit', 'recipes.manage')->name('recipes.edit');

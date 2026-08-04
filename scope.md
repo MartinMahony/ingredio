@@ -146,16 +146,16 @@ Work top-to-bottom; each phase should end green (tests pass, Pint clean).
 - [x] Robust error handling + retry policy + failure surfacing.
 - [x] Tests with a **faked/mock Gemini response** (no live API in test suite).
 
-### Phase 3 — Upload & Review UX  *(P0)*
-- [ ] Livewire upload component: drag-drop + file picker (PNG/JPG/PDF), size/type
+### Phase 3 — Upload & Review UX  *(P0)*  ✅ Done
+- [x] Livewire upload component: drag-drop + file picker (PNG/JPG/PDF), size/type
       validation, mobile camera capture (`capture` attribute).
-- [ ] Store source on transient disk; create scan; dispatch job.
-- [ ] Processing screen with live status (Livewire polling) → "ready" redirect.
-- [ ] **Review & confirm** screen: pre-filled editable recipe from extraction; user
+- [x] Store source on transient disk; create scan; dispatch job.
+- [x] Processing screen with live status (Livewire polling) → "ready" redirect.
+- [x] **Review & confirm** screen: pre-filled editable recipe from extraction; user
       corrects before saving. This is the key trust/quality step.
-- [ ] PDF handling decision: native Gemini PDF vs. rasterize-first. Implement chosen path.
-- [ ] Delete source file on success (respect `keep_source`).
-- [ ] Tests: upload validation, job dispatch, status transitions, review save.
+- [x] PDF handling decision: native Gemini PDF vs. rasterize-first. Implement chosen path.
+- [x] Delete source file on success (respect `keep_source`).
+- [x] Tests: upload validation, job dispatch, status transitions, review save.
 
 ### Phase 4 — Paste-a-URL Import  *(P1)*
 - [ ] URL input component + validation (SSRF-safe fetch: allowlist scheme, block

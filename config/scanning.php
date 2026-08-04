@@ -15,7 +15,7 @@ return [
 
     'driver' => env('SCAN_DRIVER', 'gemini'),
 
-    'model' => env('SCAN_MODEL', 'gemini-2.0-flash'),
+    'model' => env('SCAN_MODEL', 'gemini-flash-latest'),
 
     /*
     |--------------------------------------------------------------------------

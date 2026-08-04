@@ -31,10 +31,16 @@ $delete = function (Recipe $recipe) {
             </p>
         </div>
 
-        <a href="{{ route('recipes.create') }}" wire:navigate
-            class="rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700">
-            New recipe
-        </a>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('recipes.create') }}" wire:navigate
+                class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800">
+                New recipe
+            </a>
+            <a href="{{ route('scans.create') }}" wire:navigate
+                class="rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700">
+                Scan a recipe
+            </a>
+        </div>
     </div>
 
     @if ($this->recipes->isEmpty())
@@ -49,12 +55,18 @@ $delete = function (Recipe $recipe) {
             </div>
             <h2 class="text-base font-medium">No recipes yet</h2>
             <p class="mt-1 max-w-sm text-sm text-gray-500 dark:text-gray-400">
-                Add a recipe manually to get started. Scanning from screenshots and PDFs is coming soon.
+                Scan a screenshot, photo, or PDF to extract a recipe automatically, or add one manually.
             </p>
-            <a href="{{ route('recipes.create') }}" wire:navigate
-                class="mt-4 rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700">
-                Add your first recipe
-            </a>
+            <div class="mt-4 flex items-center gap-2">
+                <a href="{{ route('scans.create') }}" wire:navigate
+                    class="rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700">
+                    Scan a recipe
+                </a>
+                <a href="{{ route('recipes.create') }}" wire:navigate
+                    class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800">
+                    Add manually
+                </a>
+            </div>
         </div>
     @else
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
