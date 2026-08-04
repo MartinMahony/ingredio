@@ -135,16 +135,16 @@ Work top-to-bottom; each phase should end green (tests pass, Pint clean).
 - [x] Delete recipe (with confirmation) from list and detail page.
 - [x] Feature tests for CRUD + authorization (26 tests passing).
 
-### Phase 2 — Extraction Engine (core value)  *(P0)*
-- [ ] Define `RecipeExtractor` contract + `ExtractedRecipe` / `ScanSource` DTOs.
-- [ ] Structured JSON schema/prompt for Gemini (title, servings, times, grouped
+### Phase 2 — Extraction Engine (core value)  *(P0)*  ✅ Done
+- [x] Define `RecipeExtractor` contract + `ExtractedRecipe` / `ScanSource` DTOs.
+- [x] Structured JSON schema/prompt for Gemini (title, servings, times, grouped
       ingredients w/ qty+unit+name, grouped steps, suggested tags, cuisine).
-- [ ] `GeminiRecipeExtractor` driver (image input first).
-- [ ] `recipe_scans` migration + model + `ScanStatus` enum.
-- [ ] `ProcessRecipeScan` queued job: extract → validate → persist → cleanup source.
-- [ ] Mapping layer: `ExtractedRecipe` DTO → recipe + ingredients + steps.
-- [ ] Robust error handling + retry policy + failure surfacing.
-- [ ] Tests with a **faked/mock Gemini response** (no live API in test suite).
+- [x] `GeminiRecipeExtractor` driver (image input first).
+- [x] `recipe_scans` migration + model + `ScanStatus` enum.
+- [x] `ProcessRecipeScan` queued job: extract → validate → persist → cleanup source.
+- [x] Mapping layer: `ExtractedRecipe` DTO → recipe + ingredients + steps.
+- [x] Robust error handling + retry policy + failure surfacing.
+- [x] Tests with a **faked/mock Gemini response** (no live API in test suite).
 
 ### Phase 3 — Upload & Review UX  *(P0)*
 - [ ] Livewire upload component: drag-drop + file picker (PNG/JPG/PDF), size/type
