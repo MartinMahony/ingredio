@@ -102,12 +102,13 @@ $scanUrl = function () {
         </p>
     </div>
 
-    <div class="mb-4 inline-flex rounded-lg border border-gray-200 p-1 dark:border-gray-800">
-        <button type="button" wire:click="$set('mode', 'file')"
+    <div class="mb-4 inline-flex rounded-lg border border-gray-200 p-1 dark:border-gray-800" role="group"
+        aria-label="Scan input method">
+        <button type="button" wire:click="$set('mode', 'file')" aria-pressed="{{ $mode === 'file' ? 'true' : 'false' }}"
             class="rounded-md px-3 py-1.5 text-sm font-medium transition {{ $mode === 'file' ? 'bg-orange-600 text-white' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white' }}">
             Upload file
         </button>
-        <button type="button" wire:click="$set('mode', 'url')"
+        <button type="button" wire:click="$set('mode', 'url')" aria-pressed="{{ $mode === 'url' ? 'true' : 'false' }}"
             class="rounded-md px-3 py-1.5 text-sm font-medium transition {{ $mode === 'url' ? 'bg-orange-600 text-white' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white' }}">
             Paste a URL
         </button>
@@ -121,7 +122,7 @@ $scanUrl = function () {
                     class="sr-only" />
 
                 <svg class="mb-3 h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                    stroke="currentColor">
+                    stroke="currentColor" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round"
                         d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                 </svg>

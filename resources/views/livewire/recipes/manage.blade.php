@@ -256,16 +256,16 @@ $save = function () {
                 @foreach ($ingredients as $index => $ingredient)
                     <div wire:key="ingredient-{{ $index }}" class="flex flex-wrap items-start gap-2 sm:flex-nowrap">
                         <input wire:model="ingredients.{{ $index }}.quantity" type="text" placeholder="Qty"
-                            class="{{ $inputClass }} sm:w-20">
+                            aria-label="Ingredient {{ $index + 1 }} quantity" class="{{ $inputClass }} sm:w-20">
                         <input wire:model="ingredients.{{ $index }}.unit" type="text" placeholder="Unit"
-                            class="{{ $inputClass }} sm:w-24">
+                            aria-label="Ingredient {{ $index + 1 }} unit" class="{{ $inputClass }} sm:w-24">
                         <input wire:model="ingredients.{{ $index }}.name" type="text" placeholder="Ingredient"
-                            class="{{ $inputClass }} min-w-0 flex-1">
+                            aria-label="Ingredient {{ $index + 1 }} name" class="{{ $inputClass }} min-w-0 flex-1">
                         <input wire:model="ingredients.{{ $index }}.group" type="text" placeholder="Section (optional)"
-                            class="{{ $inputClass }} sm:w-40">
+                            aria-label="Ingredient {{ $index + 1 }} section" class="{{ $inputClass }} sm:w-40">
                         <button type="button" wire:click="removeIngredient({{ $index }})"
                             class="rounded-md p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
-                            title="Remove">
+                            title="Remove" aria-label="Remove ingredient {{ $index + 1 }}">
                             &times;
                         </button>
                     </div>
@@ -289,12 +289,12 @@ $save = function () {
                             {{ $index + 1 }}
                         </span>
                         <textarea wire:model="steps.{{ $index }}.instruction" rows="1" placeholder="Describe this step"
-                            class="{{ $inputClass }} min-w-0 flex-1"></textarea>
+                            aria-label="Step {{ $index + 1 }} instruction" class="{{ $inputClass }} min-w-0 flex-1"></textarea>
                         <input wire:model="steps.{{ $index }}.minutes" type="number" min="0" placeholder="Min"
-                            class="{{ $inputClass }} w-20">
+                            aria-label="Step {{ $index + 1 }} minutes" class="{{ $inputClass }} w-20">
                         <button type="button" wire:click="removeStep({{ $index }})"
                             class="rounded-md p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
-                            title="Remove">
+                            title="Remove" aria-label="Remove step {{ $index + 1 }}">
                             &times;
                         </button>
                     </div>

@@ -77,8 +77,9 @@ $delete = function () {
                     <button type="button" wire:click="removeRecipe({{ $recipe->id }})"
                         wire:confirm="Remove this recipe from the collection?"
                         class="absolute right-3 top-3 rounded-md p-1 text-gray-400 opacity-0 transition hover:bg-red-50 hover:text-red-600 focus:opacity-100 group-hover:opacity-100 dark:hover:bg-red-900/30"
-                        title="Remove from collection">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        title="Remove from collection" aria-label="Remove {{ $recipe->title }} from this collection">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                            aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>

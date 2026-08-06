@@ -148,7 +148,8 @@ $disableSharing = function () {
                             class="flex items-center gap-1 rounded-full bg-orange-50 py-1 pl-2.5 pr-1 text-xs font-medium text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
                             {{ $collection->name }}
                             <button type="button" wire:click="removeFromCollection({{ $collection->id }})"
-                                class="rounded-full p-0.5 hover:bg-orange-100 dark:hover:bg-orange-900/60" title="Remove">
+                                class="rounded-full p-0.5 hover:bg-orange-100 dark:hover:bg-orange-900/60"
+                                title="Remove" aria-label="Remove from {{ $collection->name }}">
                                 &times;
                             </button>
                         </span>
@@ -156,7 +157,7 @@ $disableSharing = function () {
 
                     @if ($this->availableCollections->isNotEmpty())
                         <form wire:submit="addToCollection" class="flex items-center gap-1">
-                            <select wire:model="selectedCollectionId"
+                            <select wire:model="selectedCollectionId" aria-label="Add to collection"
                                 class="rounded-md border-gray-300 py-1 text-xs shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-800">
                                 <option value="">Add to collection&hellip;</option>
                                 @foreach ($this->availableCollections as $collection)
@@ -178,7 +179,7 @@ $disableSharing = function () {
                 </h3>
                 @if ($recipe->isShared())
                     <div class="flex flex-wrap items-center gap-2" x-data="{ copied: false }">
-                        <input type="text" readonly x-ref="shareUrl"
+                        <input type="text" readonly x-ref="shareUrl" aria-label="Public share link"
                             value="{{ route('recipes.shared', $recipe->share_token) }}" onclick="this.select()"
                             class="w-full max-w-md rounded-md border-gray-300 bg-gray-50 py-1 text-xs text-gray-600 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
                         <button type="button"

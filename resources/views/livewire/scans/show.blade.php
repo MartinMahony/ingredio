@@ -27,11 +27,11 @@ $status = computed(fn () => $this->scan->status);
 
 <div class="mx-auto max-w-xl" @if (! $this->status->isFinished()) wire:poll.2s="poll" @endif>
     @if ($this->status === App\Enums\ScanStatus::Failed)
-        <div
+        <div role="alert"
             class="flex flex-col items-center justify-center rounded-xl border border-red-200 bg-red-50 p-10 text-center dark:border-red-900/50 dark:bg-red-900/20">
             <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40">
                 <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                    stroke="currentColor">
+                    stroke="currentColor" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round"
                         d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                 </svg>
@@ -49,9 +49,9 @@ $status = computed(fn () => $this->scan->status);
             </a>
         </div>
     @else
-        <div
+        <div role="status" aria-live="polite"
             class="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-12 text-center dark:border-gray-800 dark:bg-gray-900">
-            <svg class="mb-4 h-10 w-10 animate-spin text-orange-600" fill="none" viewBox="0 0 24 24">
+            <svg class="mb-4 h-10 w-10 animate-spin text-orange-600" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
                 <path class="opacity-75" fill="currentColor"
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />

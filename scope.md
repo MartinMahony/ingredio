@@ -229,13 +229,61 @@ Built exactly to the design agreed above:
       and the route's rate limit actually triggers a 429.
 
 ### Phase 7 — Hardening & Launch prep  *(P2)*
-- [ ] Queue reliability (failed_jobs handling, retries, alerting).
-- [ ] Move to Postgres/MySQL + real queue driver (Redis/DB) for production.
-- [ ] Storage driver for production if retention enabled (S3-ready) — likely
-      droppable, see discussion.
-- [ ] Accessibility + mobile QA pass.
-- [ ] Deployment to a **Digital Ocean droplet** (not Laravel Cloud) +
-      env/secret management for `GEMINI_API_KEY`.
+
+Target: a **Digital Ocean droplet managed via Coolify** (not Laravel Cloud),
+sharing the droplet with other apps. Decisions made together:
+
+| Area | Decision |
+| --- | --- |
+| Production DB | **MySQL/MariaDB** (own DB, same droplet) — chosen over Postgres specifically so the existing phpMyAdmin instance can still be used (phpMyAdmin cannot connect to Postgres at all). |
+| Production queue | **Redis**, via `predis` (pure PHP client — no `redis` PHP extension needed, more portable across containers). |
+| Deployment | **Coolify**, using its Nixpacks auto-detect build (no custom Dockerfile) — app just needs to be compatible (health check, reverse-proxy trust). |
+| Error tracking | **Sentry** (existing account) for unhandled exceptions/queue failures, beyond the in-app "scan failed" UI status. |
+| Source retention/S3 storage | Dropped — no demand, and Phase 6 already ruled out retention. |
+
+- [x] **Queue reliability**: `failed_jobs` table already provisioned by
+      Laravel's default migrations; `ProcessRecipeScan` already has
+      `tries=3`/`backoff=10` and marks the scan failed for the user to see.
+      Sentry now also captures queue job failures/unhandled exceptions
+      server-side (see below).
+- [x] **Redis queue driver**: added `predis/predis`; production `.env` should
+      set `QUEUE_CONNECTION=redis` + `REDIS_*` (client is `predis`, not
+      `phpredis`). Dev/test keep `QUEUE_CONNECTION=database`/`sync` — no
+      Redis needed locally.
+- [x] **MySQL/MariaDB for production**: no code changes needed (Laravel's
+      migrations are DB-agnostic); production `.env` sets
+      `DB_CONNECTION=mysql` + credentials for the app's own database.
+- [x] **Sentry**: `sentry/sentry-laravel` installed, `config/sentry.php`
+      published (env-driven, safe no-op with an empty DSN), wired into
+      `bootstrap/app.php`'s `withExceptions()`. Production `.env` needs
+      `SENTRY_LARAVEL_DSN` set.
+- [x] **Reverse proxy trust**: `bootstrap/app.php` now calls
+      `$middleware->trustProxies(at: '*')` so HTTPS detection, secure
+      cookies, and generated URLs are correct behind Coolify's Traefik proxy.
+- [x] **Accessibility + mobile QA pass**: added `aria-label`s to icon-only
+      buttons and unlabeled inputs/selects (dashboard search/filters, recipe
+      form repeatable rows, share-link controls, collection chips),
+      `aria-hidden="true"` on purely decorative SVG icons, `role="status"
+      aria-live="polite"` on the scan-processing screen and `role="alert"` on
+      the scan-failed screen so screen readers announce state changes, and
+      `aria-pressed` on the upload/URL mode toggle. Layout already used
+      responsive `sm:`/`lg:` breakpoints throughout; no structural changes
+      needed for mobile.
+- [ ] **Manual Coolify setup** (droplet access required, not done from here):
+      1. Create a Coolify application resource (Nixpacks/PHP) pointed at this
+         repo, plus a MySQL/MariaDB database service and a Redis service.
+      2. Set env vars in Coolify: `APP_KEY` (generate fresh), `DB_*`,
+         `REDIS_*`, `QUEUE_CONNECTION=redis`, `GEMINI_API_KEY`,
+         `SENTRY_LARAVEL_DSN`, `SCAN_*`, mail settings, `APP_URL`.
+      3. Post-deployment command: `php artisan migrate --force` (add
+         `config:cache`/`route:cache`/`view:cache` once env is stable).
+      4. A **second** Coolify resource on the same repo/image, with the start
+         command overridden to `php artisan queue:work --tries=3 --backoff=10`
+         — Laravel's queue worker needs its own long-running process,
+         separate from the web resource.
+      5. Point Coolify's health check at `/up` (Laravel's built-in health
+         route, already present).
+      6. Attach a domain/subdomain — Coolify/Traefik handles TLS automatically.
 
 ---
 

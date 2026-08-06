@@ -72,7 +72,7 @@ $delete = function (Recipe $recipe) {
             class="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-white p-12 text-center dark:border-gray-700 dark:bg-gray-900">
             <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-orange-50 dark:bg-orange-900/30">
                 <svg class="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                    stroke="currentColor">
+                    stroke="currentColor" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round"
                         d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
                 </svg>
@@ -95,9 +95,10 @@ $delete = function (Recipe $recipe) {
     @else
         <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
             <input wire:model.live.debounce.300ms="search" type="search" placeholder="Search by title or ingredient&hellip;"
+                aria-label="Search recipes"
                 class="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:max-w-xs dark:border-gray-700 dark:bg-gray-900">
 
-            <select wire:model.live="cuisine"
+            <select wire:model.live="cuisine" aria-label="Filter by cuisine"
                 class="rounded-md border-gray-300 text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900">
                 <option value="">All cuisines</option>
                 @foreach ($this->cuisines as $cuisineOption)
@@ -106,7 +107,7 @@ $delete = function (Recipe $recipe) {
             </select>
 
             @if ($this->tags->isNotEmpty())
-                <select wire:model.live="tag"
+                <select wire:model.live="tag" aria-label="Filter by tag"
                     class="rounded-md border-gray-300 text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900">
                     <option value="">All tags</option>
                     @foreach ($this->tags as $tagOption)
@@ -163,8 +164,9 @@ $delete = function (Recipe $recipe) {
                     <button type="button" wire:click="delete({{ $recipe->id }})"
                         wire:confirm="Delete this recipe? This cannot be undone."
                         class="absolute right-3 top-3 rounded-md p-1 text-gray-400 opacity-0 transition hover:bg-red-50 hover:text-red-600 focus:opacity-100 group-hover:opacity-100 dark:hover:bg-red-900/30"
-                        title="Delete recipe">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        title="Delete recipe" aria-label="Delete {{ $recipe->title }}">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                            aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round"
                                 d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                         </svg>
