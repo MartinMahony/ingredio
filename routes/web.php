@@ -6,6 +6,10 @@ use Livewire\Volt\Volt;
 
 Route::redirect('/', '/dashboard');
 
+Route::middleware('throttle:30,1')->group(function () {
+    Volt::route('shared/{token}', 'shared.recipe')->name('recipes.shared');
+});
+
 Route::middleware('guest')->group(function () {
     Volt::route('login', 'auth.login')->name('login');
     Volt::route('register', 'auth.register')->name('register');

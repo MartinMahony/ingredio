@@ -204,44 +204,38 @@ Work top-to-bottom; each phase should end green (tests pass, Pint clean).
   image-processing dependency and PDF rasterization for thumbnails, and cuts
   against the app's privacy-first delete-by-default stance.
 
-### Phase 6b — Public Read-Only Share Link  *(designed, not yet built)*
+### Phase 6b — Public Read-Only Share Link  *(P2)*  ✅ Done
 
-Decided this has real value (sharing with people who don't have accounts) but
-needs careful scoping so a shared link can **never** expose more than a
-read-only view of one recipe's content. Design, to be built as a later phase:
+Built exactly to the design agreed above:
 
-- **Data**: add `recipes.share_token` (nullable, unique, random ~40-char
-  URL-safe string) and `recipes.shared_at` (nullable). No token = not shared.
-  A "Enable public link" / "Disable public link" toggle on the recipe detail
-  page generates/nulls the token (regenerating invalidates the old link).
-- **Route**: a dedicated unauthenticated route, e.g.
-  `Route::get('shared/{token}', ...)->name('recipes.shared')`, resolved by
-  `share_token` lookup only — never reuses `recipes.show`, `RecipePolicy`, or
-  route-model-binding by `id` (avoids any chance of ID-based enumeration or
-  accidentally falling back to auth-based logic).
-- **View**: a new minimal Volt component + a stripped-down guest layout (no
-  main nav, no "Recipes / Collections / Profile / Logout", no links back into
-  the authenticated app). Renders only title, description, servings/times/
-  difficulty/cuisine, ingredients, steps, notes, and tags as plain text/chips
-  — no edit/delete/print-with-app-chrome/collection controls, no exposure of
-  the owning user's identity beyond perhaps a first name if ever desired.
-- **Query scope**: load *only* the recipe + ingredients/steps/tags relations
-  needed for display; never eager-load or expose `collections`, `recipe_scans`,
-  `user` email, etc.
-- **Anti-abuse**: rate-limit the shared route by IP (prevent token
-  brute-forcing/scraping) and set `<meta name="robots" content="noindex,nofollow">`
-  so shared links aren't crawled/indexed by search engines.
-- **Tests**: disabled-by-default (no token = 404), enabling generates a
-  working link, disabling/regenerating invalidates the old token, the shared
-  page never renders authenticated-only chrome or another user's data, and
-  the route is unaffected by `RecipePolicy`.
+- [x] **Data**: `recipes.share_token` (nullable, unique, random 40-char
+      string) + `recipes.shared_at`. Set/cleared only via `Recipe::enableSharing()`
+      / `disableSharing()` — intentionally not mass-assignable.
+- [x] **Route**: unauthenticated `GET shared/{token}` (`recipes.shared`),
+      resolved purely by `share_token` lookup — never touches `RecipePolicy`
+      or `id`-based binding. Throttled at `throttle:30,1`.
+- [x] **View**: `shared.recipe` Volt component + new minimal `layouts.shared`
+      layout (no main nav, no auth links), with
+      `<meta name="robots" content="noindex, nofollow">`. Renders only
+      title/description/servings/times/difficulty/cuisine/tags/ingredients/
+      steps/notes — no edit/delete/print/collections controls.
+- [x] **Query scope**: loads only `ingredients`, `steps`, `tags` — never
+      `collections`, `recipe_scans`, or user contact info.
+- [x] **UI**: "Enable public link" / "Regenerate" / "Disable" controls on
+      `recipes.show`, gated by `RecipePolicy::update`.
+- [x] Tests (9): default-unshared, 404 for unknown/old tokens, enabling
+      works end-to-end, regenerate invalidates the old token, disable
+      revokes access, no-auth-required, no app chrome/other-user leakage,
+      and the route's rate limit actually triggers a 429.
 
 ### Phase 7 — Hardening & Launch prep  *(P2)*
 - [ ] Queue reliability (failed_jobs handling, retries, alerting).
 - [ ] Move to Postgres/MySQL + real queue driver (Redis/DB) for production.
-- [ ] Storage driver for production if retention enabled (S3-ready).
+- [ ] Storage driver for production if retention enabled (S3-ready) — likely
+      droppable, see discussion.
 - [ ] Accessibility + mobile QA pass.
-- [ ] Deployment (Laravel Cloud) + env/secret management for `GEMINI_API_KEY`.
+- [ ] Deployment to a **Digital Ocean droplet** (not Laravel Cloud) +
+      env/secret management for `GEMINI_API_KEY`.
 
 ---
 

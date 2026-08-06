@@ -48,6 +48,18 @@ $removeFromCollection = function (int $collectionId) {
     $this->recipe->load('collections');
 };
 
+$enableSharing = function () {
+    Gate::authorize('update', $this->recipe);
+
+    $this->recipe->enableSharing();
+};
+
+$disableSharing = function () {
+    Gate::authorize('update', $this->recipe);
+
+    $this->recipe->disableSharing();
+};
+
 ?>
 
 <div>
@@ -158,6 +170,47 @@ $removeFromCollection = function (int $collectionId) {
                         </form>
                     @endif
                 </div>
+            </div>
+
+            <div class="mt-4 print:hidden">
+                <h3 class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    Public link
+                </h3>
+                @if ($recipe->isShared())
+                    <div class="flex flex-wrap items-center gap-2" x-data="{ copied: false }">
+                        <input type="text" readonly x-ref="shareUrl"
+                            value="{{ route('recipes.shared', $recipe->share_token) }}" onclick="this.select()"
+                            class="w-full max-w-md rounded-md border-gray-300 bg-gray-50 py-1 text-xs text-gray-600 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                        <button type="button"
+                            x-on:click="
+                                $refs.shareUrl.select();
+                                if (window.isSecureContext && navigator.clipboard) {
+                                    navigator.clipboard.writeText($refs.shareUrl.value);
+                                } else {
+                                    document.execCommand('copy');
+                                }
+                                copied = true;
+                                setTimeout(() => copied = false, 2000);
+                            "
+                            class="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
+                            <span x-show="! copied">Copy link</span>
+                            <span x-show="copied" x-cloak>Copied!</span>
+                        </button>
+                        <button type="button" wire:click="enableSharing" wire:confirm="Regenerate the link? The old link will stop working."
+                            class="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
+                            Regenerate
+                        </button>
+                        <button type="button" wire:click="disableSharing" wire:confirm="Disable the public link? It will stop working immediately."
+                            class="rounded-md border border-red-200 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-900/30">
+                            Disable
+                        </button>
+                    </div>
+                @else
+                    <button type="button" wire:click="enableSharing"
+                        class="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
+                        Enable public link
+                    </button>
+                @endif
             </div>
         </header>
 
