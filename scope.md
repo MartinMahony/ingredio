@@ -240,7 +240,7 @@ sharing the droplet with other apps. Decisions made together:
 | --- | --- |
 | Production DB | **MySQL/MariaDB** (own DB, same droplet) — chosen over Postgres specifically so the existing phpMyAdmin instance can still be used (phpMyAdmin cannot connect to Postgres at all). |
 | Production queue | **Redis**, via `predis` (pure PHP client — no `redis` PHP extension needed, more portable across containers). |
-| Deployment | **Coolify**, using its Nixpacks auto-detect build (no custom Dockerfile) — app just needs to be compatible (health check, reverse-proxy trust). |
+| Deployment | **Coolify**, using its Nixpacks auto-detect build, with a project-supplied `nginx.template.conf` (see below) to work around a bug in Nixpacks' own default PHP nginx template. |
 | Error tracking | **Sentry** (existing account) for unhandled exceptions/queue failures, beyond the in-app "scan failed" UI status. |
 | Source retention/S3 storage | Dropped — no demand, and Phase 6 already ruled out retention. |
 
@@ -288,7 +288,21 @@ sharing the droplet with other apps. Decisions made together:
          route, already present).
       6. Attach a domain/subdomain — Coolify/Traefik handles TLS automatically.
 
-### Post-launch enhancement — Nutritional Information  ✅ Done
+### Deployment fix — nginx.template.conf  ✅ Done
+- [x] First deploy attempt hit `nginx: [emerg] duplicate location "/" in
+      /nginx.conf` on every boot (crash-restart loop → Traefik "no available
+      server"). Root cause is a genuine bug in **Nixpacks' own default PHP
+      nginx template**: it unconditionally renders a `location /` block for
+      `IS_LARAVEL` (auto-set because `artisan` exists) *and* a second
+      `location /` block for `NIXPACKS_PHP_FALLBACK_PATH` whenever both are
+      set — producing invalid nginx config. It also defaults `root` to
+      `/app` rather than `/app/public` unless `NIXPACKS_PHP_ROOT_DIR` is set.
+- [x] Fixed by adding a project-root `nginx.template.conf` (Nixpacks
+      auto-detects and uses it in place of its bundled template) — same file
+      as upstream, minus the fallback-path block, with `root /app/public`
+      hardcoded. No Coolify env var juggling required; the fix lives in the
+      repo and is immune to whatever auto-populates `NIXPACKS_PHP_FALLBACK_PATH`
+      on the Coolify side.
 - [x] `recipes.calories/protein_grams/carbs_grams/fat_grams` (all nullable,
       per serving). Extraction prompt/schema updated so Gemini transcribes
       these **only when explicitly stated in the source** — never
