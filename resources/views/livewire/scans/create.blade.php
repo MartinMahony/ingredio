@@ -35,6 +35,7 @@ $scan = function () {
     ]);
 
     $disk = config('scanning.disk');
+    $size = $this->file->getSize();
     $path = $this->file->store('scans', $disk);
 
     $isPdf = $this->file->getClientOriginalExtension() === 'pdf'
@@ -46,6 +47,7 @@ $scan = function () {
         'source_type' => $isPdf ? 'pdf' : 'image',
         'source_disk' => $disk,
         'source_path' => $path,
+        'source_size' => $size,
         'original_filename' => $this->file->getClientOriginalName(),
         'provider' => config('scanning.driver'),
         'model' => config('scanning.model'),

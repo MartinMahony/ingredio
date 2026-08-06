@@ -18,6 +18,7 @@ use Illuminate\Support\Str;
     'source_url',
     'source_disk',
     'source_path',
+    'source_size',
     'original_filename',
     'provider',
     'model',

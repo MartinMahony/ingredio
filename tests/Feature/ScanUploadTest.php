@@ -33,6 +33,7 @@ it('stores the upload, creates a scan, and dispatches the job', function () {
         ->and($scan->source_type)->toBe('image')
         ->and($scan->source_disk)->toBe('local')
         ->and($scan->original_filename)->toBe('recipe.png')
+        ->and($scan->source_size)->toBe($file->getSize())
         ->and($scan->user_id)->toBe(auth()->id());
 
     Storage::disk('local')->assertExists($scan->source_path);

@@ -142,6 +142,79 @@ it('leaves nutrition fields null when not stated in the source', function () {
         ->and($recipe->hasNutrition())->toBeFalse();
 });
 
+it('retries when the stored file size does not match what was recorded at upload time', function () {
+    Storage::fake('local');
+    Http::fake([
+        '*' => Http::response(fakeGeminiResponse(sampleRecipePayload())),
+    ]);
+
+    $user = User::factory()->create();
+    // Simulate a partially-synced file on a shared mount: only 5 of the
+    // expected 20 bytes are actually readable yet.
+    Storage::disk('local')->put('scans/recipe.png', 'fake-');
+
+    $scan = RecipeScan::factory()->for($user)->create([
+        'source_disk' => 'local',
+        'source_path' => 'scans/recipe.png',
+        'source_size' => 20,
+    ]);
+
+    (new ProcessRecipeScan($scan))->handle(
+        app(RecipeExtractor::class),
+        app(StoreExtractedRecipe::class),
+        app(UrlContentFetcher::class),
+    );
+})->throws(RuntimeException::class, 'expected 20 bytes, read 5 bytes');
+
+it('processes the file normally when the size matches what was recorded at upload time', function () {
+    Storage::fake('local');
+    Http::fake([
+        '*' => Http::response(fakeGeminiResponse(sampleRecipePayload())),
+    ]);
+
+    $user = User::factory()->create();
+    $bytes = 'fake-image-bytes';
+    Storage::disk('local')->put('scans/recipe.png', $bytes);
+
+    $scan = RecipeScan::factory()->for($user)->create([
+        'source_disk' => 'local',
+        'source_path' => 'scans/recipe.png',
+        'source_size' => strlen($bytes),
+    ]);
+
+    (new ProcessRecipeScan($scan))->handle(
+        app(RecipeExtractor::class),
+        app(StoreExtractedRecipe::class),
+        app(UrlContentFetcher::class),
+    );
+
+    expect($scan->fresh()->status)->toBe(ScanStatus::Ready);
+});
+
+it('retains source_size compatibility with scans that predate this check', function () {
+    Storage::fake('local');
+    Http::fake([
+        '*' => Http::response(fakeGeminiResponse(sampleRecipePayload())),
+    ]);
+
+    $user = User::factory()->create();
+    Storage::disk('local')->put('scans/recipe.png', 'fake-image-bytes');
+
+    $scan = RecipeScan::factory()->for($user)->create([
+        'source_disk' => 'local',
+        'source_path' => 'scans/recipe.png',
+        'source_size' => null,
+    ]);
+
+    (new ProcessRecipeScan($scan))->handle(
+        app(RecipeExtractor::class),
+        app(StoreExtractedRecipe::class),
+        app(UrlContentFetcher::class),
+    );
+
+    expect($scan->fresh()->status)->toBe(ScanStatus::Ready);
+});
+
 it('retains the source file when keep_source is enabled', function () {
     config()->set('scanning.keep_source', true);
 

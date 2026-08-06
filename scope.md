@@ -315,6 +315,27 @@ sharing the droplet with other apps. Decisions made together:
 - [x] Tests (8): extraction with/without nutrition present, manual
       create/edit, validation, and display on both recipe pages.
 
+### Deployment fix — source file race condition across containers  ✅ Done
+- [x] Once the web app and queue worker ran as separate Coolify resources
+      sharing scan uploads via a mounted directory, file-based scans
+      (image/PDF) became **intermittently** unreliable — the same file that
+      extracted perfectly when run directly would occasionally come back
+      with near-empty/garbled data in production. Root cause: the worker
+      container could read the file before the web container's write had
+      fully synced across the shared mount — a classic race condition,
+      consistent with the failures being non-deterministic rather than
+      always-broken.
+- [x] Fixed by recording `recipe_scans.source_size` (the upload's byte size)
+      at upload time, and having `ProcessRecipeScan` verify the file it
+      reads back matches that size before sending it to Gemini. A mismatch
+      throws, which the job's existing retry/backoff (`tries=3`,
+      `backoff=10`) picks up a few seconds later — by which point the write
+      has synced — rather than silently processing a truncated file.
+      Backward-compatible with any scan rows that predate this column
+      (`source_size` nullable; check is skipped when null).
+- [x] Tests (3): mismatch throws and is retryable, matching size processes
+      normally, `source_size = null` (pre-existing rows) skips the check.
+
 ---
 
 ## 6. Cross-Cutting Concerns
