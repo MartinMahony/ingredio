@@ -24,6 +24,10 @@ final class ExtractedRecipe
         public readonly array $ingredients,
         public readonly array $steps,
         public readonly array $tags = [],
+        public readonly ?int $calories = null,
+        public readonly ?float $proteinGrams = null,
+        public readonly ?float $carbsGrams = null,
+        public readonly ?float $fatGrams = null,
     ) {}
 
     /**
@@ -72,6 +76,10 @@ final class ExtractedRecipe
             ingredients: $ingredients,
             steps: $steps,
             tags: $tags,
+            calories: Normalize::nullableInt($data['calories'] ?? null),
+            proteinGrams: Normalize::nullableFloat($data['protein_grams'] ?? null),
+            carbsGrams: Normalize::nullableFloat($data['carbs_grams'] ?? null),
+            fatGrams: Normalize::nullableFloat($data['fat_grams'] ?? null),
         );
     }
 

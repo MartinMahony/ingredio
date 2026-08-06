@@ -57,6 +57,36 @@ mount(function (string $token) {
             @endif
         </dl>
 
+        @if ($recipe->hasNutrition())
+            <dl class="mt-3 flex flex-wrap gap-x-8 gap-y-2 text-sm">
+                @if ($recipe->calories !== null)
+                    <div>
+                        <dt class="text-gray-500 dark:text-gray-400">Calories</dt>
+                        <dd class="font-medium">{{ $recipe->calories }} kcal</dd>
+                    </div>
+                @endif
+                @if ($recipe->protein_grams !== null)
+                    <div>
+                        <dt class="text-gray-500 dark:text-gray-400">Protein</dt>
+                        <dd class="font-medium">{{ $recipe->protein_grams }} g</dd>
+                    </div>
+                @endif
+                @if ($recipe->carbs_grams !== null)
+                    <div>
+                        <dt class="text-gray-500 dark:text-gray-400">Carbs</dt>
+                        <dd class="font-medium">{{ $recipe->carbs_grams }} g</dd>
+                    </div>
+                @endif
+                @if ($recipe->fat_grams !== null)
+                    <div>
+                        <dt class="text-gray-500 dark:text-gray-400">Fat</dt>
+                        <dd class="font-medium">{{ $recipe->fat_grams }} g</dd>
+                    </div>
+                @endif
+            </dl>
+            <p class="mt-1 text-xs text-gray-400">Nutrition values are per serving, as stated in the source.</p>
+        @endif
+
         @if ($recipe->tags->isNotEmpty())
             <div class="mt-4 flex flex-wrap gap-2">
                 @foreach ($recipe->tags as $tag)

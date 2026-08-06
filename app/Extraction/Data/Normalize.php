@@ -27,4 +27,13 @@ final class Normalize
 
         return (int) $value;
     }
+
+    public static function nullableFloat(mixed $value): ?float
+    {
+        if ($value === null || $value === '' || ! is_numeric($value)) {
+            return null;
+        }
+
+        return (float) $value;
+    }
 }

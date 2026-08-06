@@ -94,8 +94,11 @@ interface RecipeExtractor
 - **users** — from starter kit.
 - **recipes**
   - `id, user_id, title, description, servings, prep_minutes, cook_minutes,
-    total_minutes, difficulty (enum), cuisine, source_type (image|pdf|photo|url),
-    source_url (nullable), notes, status, extracted_at, created_at, updated_at`
+    total_minutes, difficulty (enum), cuisine, calories (kcal, nullable),
+    protein_grams/carbs_grams/fat_grams (per serving, nullable),
+    source_type (image|pdf|photo|url), source_url (nullable),
+    share_token/shared_at (nullable, public read-only link), notes, status,
+    extracted_at, created_at, updated_at`
 - **ingredients**
   - `id, recipe_id, group (nullable, e.g. "For the sauce"), position, quantity
     (nullable decimal/string), unit (nullable), name, note (nullable)`
@@ -284,6 +287,19 @@ sharing the droplet with other apps. Decisions made together:
       5. Point Coolify's health check at `/up` (Laravel's built-in health
          route, already present).
       6. Attach a domain/subdomain — Coolify/Traefik handles TLS automatically.
+
+### Post-launch enhancement — Nutritional Information  ✅ Done
+- [x] `recipes.calories/protein_grams/carbs_grams/fat_grams` (all nullable,
+      per serving). Extraction prompt/schema updated so Gemini transcribes
+      these **only when explicitly stated in the source** — never
+      calculated/estimated, to avoid presenting fabricated nutrition data as
+      fact.
+- [x] Manual "Nutrition (per serving)" fields on the recipe create/edit form.
+- [x] Displayed on both `recipes.show` and the public `shared.recipe` page
+      when present, with a note that values are per serving as stated in
+      the source; hidden entirely when absent.
+- [x] Tests (8): extraction with/without nutrition present, manual
+      create/edit, validation, and display on both recipe pages.
 
 ---
 

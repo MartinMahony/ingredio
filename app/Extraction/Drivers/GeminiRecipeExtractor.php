@@ -108,6 +108,10 @@ class GeminiRecipeExtractor implements RecipeExtractor
         - Use integer minutes for prep, cook, and per-step timings where stated; otherwise null.
         - Set difficulty only if clearly stated, as one of: easy, medium, hard.
         - Suggest up to 5 short lowercase tags (cuisine, meal type, dietary) in "tags".
+        - If the source states nutritional information (calories, protein, carbs, fat),
+          include it as per-serving values in "calories" (whole kcal), "protein_grams",
+          "carbs_grams", and "fat_grams" (grams, one decimal place). Only transcribe values
+          that are explicitly stated — never calculate, estimate, or infer nutrition yourself.
         - If a field is not present in the source, use null (or an empty array for lists).
         PROMPT;
     }
@@ -119,6 +123,7 @@ class GeminiRecipeExtractor implements RecipeExtractor
     {
         $nullableString = ['type' => 'string', 'nullable' => true];
         $nullableInteger = ['type' => 'integer', 'nullable' => true];
+        $nullableNumber = ['type' => 'number', 'nullable' => true];
 
         return [
             'type' => 'object',
@@ -161,6 +166,10 @@ class GeminiRecipeExtractor implements RecipeExtractor
                     'type' => 'array',
                     'items' => ['type' => 'string'],
                 ],
+                'calories' => $nullableInteger,
+                'protein_grams' => $nullableNumber,
+                'carbs_grams' => $nullableNumber,
+                'fat_grams' => $nullableNumber,
             ],
             'required' => ['title', 'ingredients', 'steps'],
         ];

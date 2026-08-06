@@ -22,6 +22,10 @@ use Illuminate\Support\Str;
     'total_minutes',
     'difficulty',
     'cuisine',
+    'calories',
+    'protein_grams',
+    'carbs_grams',
+    'fat_grams',
     'source_type',
     'source_url',
     'notes',
@@ -43,6 +47,10 @@ class Recipe extends Model
             'prep_minutes' => 'integer',
             'cook_minutes' => 'integer',
             'total_minutes' => 'integer',
+            'calories' => 'integer',
+            'protein_grams' => 'decimal:1',
+            'carbs_grams' => 'decimal:1',
+            'fat_grams' => 'decimal:1',
             'extracted_at' => 'datetime',
             'shared_at' => 'datetime',
         ];
@@ -91,6 +99,14 @@ class Recipe extends Model
     public function isShared(): bool
     {
         return $this->share_token !== null;
+    }
+
+    public function hasNutrition(): bool
+    {
+        return $this->calories !== null
+            || $this->protein_grams !== null
+            || $this->carbs_grams !== null
+            || $this->fat_grams !== null;
     }
 
     /**

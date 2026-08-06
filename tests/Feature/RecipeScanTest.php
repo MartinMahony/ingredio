@@ -57,6 +57,10 @@ function sampleRecipePayload(): array
             ['instruction' => ''],
         ],
         'tags' => ['soup', 'vegetarian'],
+        'calories' => 320,
+        'protein_grams' => 12.5,
+        'carbs_grams' => 40.2,
+        'fat_grams' => 8.1,
     ];
 }
 
@@ -96,9 +100,46 @@ it('processes a scan and stores the extracted recipe', function () {
         ->and($recipe->difficulty->value)->toBe('easy')
         ->and($recipe->ingredients)->toHaveCount(2)
         ->and($recipe->steps)->toHaveCount(2)
-        ->and($recipe->extracted_at)->not->toBeNull();
+        ->and($recipe->extracted_at)->not->toBeNull()
+        ->and($recipe->calories)->toBe(320)
+        ->and($recipe->protein_grams)->toBe('12.5')
+        ->and($recipe->carbs_grams)->toBe('40.2')
+        ->and($recipe->fat_grams)->toBe('8.1');
 
     Storage::disk('local')->assertMissing('scans/recipe.png');
+});
+
+it('leaves nutrition fields null when not stated in the source', function () {
+    Storage::fake('local');
+
+    $payload = sampleRecipePayload();
+    unset($payload['calories'], $payload['protein_grams'], $payload['carbs_grams'], $payload['fat_grams']);
+
+    Http::fake([
+        '*' => Http::response(fakeGeminiResponse($payload)),
+    ]);
+
+    $user = User::factory()->create();
+    Storage::disk('local')->put('scans/recipe.png', 'fake-image-bytes');
+
+    $scan = RecipeScan::factory()->for($user)->create([
+        'source_disk' => 'local',
+        'source_path' => 'scans/recipe.png',
+    ]);
+
+    (new ProcessRecipeScan($scan))->handle(
+        app(RecipeExtractor::class),
+        app(StoreExtractedRecipe::class),
+        app(UrlContentFetcher::class),
+    );
+
+    $recipe = Recipe::find($scan->refresh()->recipe_id);
+
+    expect($recipe->calories)->toBeNull()
+        ->and($recipe->protein_grams)->toBeNull()
+        ->and($recipe->carbs_grams)->toBeNull()
+        ->and($recipe->fat_grams)->toBeNull()
+        ->and($recipe->hasNutrition())->toBeFalse();
 });
 
 it('retains the source file when keep_source is enabled', function () {

@@ -16,6 +16,10 @@ state([
     'cook_minutes' => '',
     'difficulty' => '',
     'cuisine' => '',
+    'calories' => '',
+    'protein_grams' => '',
+    'carbs_grams' => '',
+    'fat_grams' => '',
     'notes' => '',
     'ingredients' => [],
     'steps' => [],
@@ -34,6 +38,10 @@ mount(function (?Recipe $recipe = null) {
         $this->cook_minutes = (string) $recipe->cook_minutes;
         $this->difficulty = $recipe->difficulty?->value ?? '';
         $this->cuisine = (string) $recipe->cuisine;
+        $this->calories = (string) $recipe->calories;
+        $this->protein_grams = (string) $recipe->protein_grams;
+        $this->carbs_grams = (string) $recipe->carbs_grams;
+        $this->fat_grams = (string) $recipe->fat_grams;
         $this->notes = (string) $recipe->notes;
 
         $this->ingredients = $recipe->ingredients->map(fn ($i) => [
@@ -84,6 +92,10 @@ $removeStep = function (int $index) {
 $save = function () {
     $this->prep_minutes = $this->prep_minutes === '' ? null : $this->prep_minutes;
     $this->cook_minutes = $this->cook_minutes === '' ? null : $this->cook_minutes;
+    $this->calories = $this->calories === '' ? null : $this->calories;
+    $this->protein_grams = $this->protein_grams === '' ? null : $this->protein_grams;
+    $this->carbs_grams = $this->carbs_grams === '' ? null : $this->carbs_grams;
+    $this->fat_grams = $this->fat_grams === '' ? null : $this->fat_grams;
 
     $validated = $this->validate([
         'title' => ['required', 'string', 'max:255'],
@@ -93,6 +105,10 @@ $save = function () {
         'cook_minutes' => ['nullable', 'integer', 'min:0', 'max:10000'],
         'difficulty' => ['nullable', Rule::enum(RecipeDifficulty::class)],
         'cuisine' => ['nullable', 'string', 'max:100'],
+        'calories' => ['nullable', 'integer', 'min:0', 'max:20000'],
+        'protein_grams' => ['nullable', 'numeric', 'min:0', 'max:2000'],
+        'carbs_grams' => ['nullable', 'numeric', 'min:0', 'max:2000'],
+        'fat_grams' => ['nullable', 'numeric', 'min:0', 'max:2000'],
         'notes' => ['nullable', 'string'],
         'ingredients' => ['array'],
         'ingredients.*.name' => ['nullable', 'string', 'max:255'],
@@ -125,6 +141,10 @@ $save = function () {
         'total_minutes' => $total,
         'difficulty' => $this->difficulty ?: null,
         'cuisine' => $this->cuisine ?: null,
+        'calories' => $validated['calories'],
+        'protein_grams' => $validated['protein_grams'],
+        'carbs_grams' => $validated['carbs_grams'],
+        'fat_grams' => $validated['fat_grams'],
         'notes' => $this->notes ?: null,
         'source_type' => $recipe->source_type ?? 'manual',
         'status' => 'ready',
@@ -232,6 +252,48 @@ $save = function () {
                 <div>
                     <label for="cuisine" class="mb-1 block text-sm font-medium">Cuisine</label>
                     <input wire:model="cuisine" id="cuisine" type="text" class="{{ $inputClass }} w-full">
+                </div>
+
+                <div>
+                    <span class="mb-1 block text-sm font-medium">Nutrition (per serving)</span>
+                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div>
+                            <label for="calories" class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Calories
+                                (kcal)</label>
+                            <input wire:model="calories" id="calories" type="number" min="0"
+                                class="{{ $inputClass }} w-full">
+                            @error('calories')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div>
+                            <label for="protein_grams" class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Protein
+                                (g)</label>
+                            <input wire:model="protein_grams" id="protein_grams" type="number" min="0" step="0.1"
+                                class="{{ $inputClass }} w-full">
+                            @error('protein_grams')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div>
+                            <label for="carbs_grams" class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Carbs
+                                (g)</label>
+                            <input wire:model="carbs_grams" id="carbs_grams" type="number" min="0" step="0.1"
+                                class="{{ $inputClass }} w-full">
+                            @error('carbs_grams')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div>
+                            <label for="fat_grams" class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Fat
+                                (g)</label>
+                            <input wire:model="fat_grams" id="fat_grams" type="number" min="0" step="0.1"
+                                class="{{ $inputClass }} w-full">
+                            @error('fat_grams')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
                 </div>
 
                 <div>
