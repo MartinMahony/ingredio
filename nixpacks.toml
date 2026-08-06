@@ -1,11 +1,1 @@
 providers = ["php"]
-
-[phases.setup]
-  nixPkgs = ["php84", "nginx", "php84Packages.composer", "nodejs_22"]
-
-[phases.build]
-  cmds = [
-    "composer install --no-dev --optimize-autoloader",
-    "npm ci",
-    "npm run build"
-  ]
