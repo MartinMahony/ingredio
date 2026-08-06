@@ -81,4 +81,20 @@ return [
         'user_agent' => env('SCAN_URL_USER_AGENT', 'IngredioBot/1.0 (+recipe import)'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Scan Rate Limiting
+    |--------------------------------------------------------------------------
+    |
+    | Per-user caps on how many scans (file or URL) can be submitted, to guard
+    | against runaway Gemini usage/cost. These are today's free-tier defaults;
+    | if usage tiers are introduced later, these could become per-plan values.
+    |
+    */
+
+    'rate_limit' => [
+        'per_minute' => (int) env('SCAN_RATE_LIMIT_PER_MINUTE', 5),
+        'per_day' => (int) env('SCAN_RATE_LIMIT_PER_DAY', 20),
+    ],
+
 ];

@@ -181,12 +181,60 @@ Work top-to-bottom; each phase should end green (tests pass, Pint clean).
       "no recipes yet" empty state.
 - [x] Tests for tagging, collections, and search (21 tests).
 
-### Phase 6 — Polish, Export & Sharing  *(P2)*
-- [ ] Export recipe (Markdown / JSON / print stylesheet / PDF).
-- [ ] Scale-servings helper (recompute ingredient quantities).
-- [ ] Optional public share link (read-only) — behind auth decision.
-- [ ] Optional source retention + thumbnails (only if `keep_source` demand appears).
-- [ ] Rate limiting / usage guardrails around the AI calls (cost control).
+### Phase 6 — Cost Control  *(P1, re-scoped)*  ✅ Done
+- [x] Rate limiting / usage guardrails around the AI calls (cost control) —
+      per-user limits (default 5/minute, 20/day, both configurable via
+      `SCAN_RATE_LIMIT_PER_MINUTE` / `SCAN_RATE_LIMIT_PER_DAY`) enforced on
+      both the file and URL scan actions via `ScanRateLimiter`, using
+      Laravel's `RateLimiter` facade. Framed so these could become per-plan
+      values later if usage tiers/subscriptions are ever introduced.
+
+**Dropped from the original Phase 6 plan** (decided together, see reasoning below):
+- ~~Export recipe (Markdown / JSON / PDF)~~ — the app's value is consolidating
+  recipes *in*, not shipping them back out; the existing print stylesheet on
+  `recipes.show` already covers "save as PDF" via the browser's print dialog.
+  Not worth a dedicated export feature.
+- ~~Scale-servings helper~~ — `ingredients.quantity` is a free-text string
+  (by design, to preserve AI-extracted values like "a pinch" or "2–3") rather
+  than a clean number, so reliable auto-scaling is a real parsing problem, not
+  a quick add. A silently-wrong scaled quantity is worse than no feature.
+  Revisit only if this becomes a real pain point.
+- ~~Source retention + thumbnails~~ — no demand has appeared (per the
+  original condition for building it at all); it would also need an
+  image-processing dependency and PDF rasterization for thumbnails, and cuts
+  against the app's privacy-first delete-by-default stance.
+
+### Phase 6b — Public Read-Only Share Link  *(designed, not yet built)*
+
+Decided this has real value (sharing with people who don't have accounts) but
+needs careful scoping so a shared link can **never** expose more than a
+read-only view of one recipe's content. Design, to be built as a later phase:
+
+- **Data**: add `recipes.share_token` (nullable, unique, random ~40-char
+  URL-safe string) and `recipes.shared_at` (nullable). No token = not shared.
+  A "Enable public link" / "Disable public link" toggle on the recipe detail
+  page generates/nulls the token (regenerating invalidates the old link).
+- **Route**: a dedicated unauthenticated route, e.g.
+  `Route::get('shared/{token}', ...)->name('recipes.shared')`, resolved by
+  `share_token` lookup only — never reuses `recipes.show`, `RecipePolicy`, or
+  route-model-binding by `id` (avoids any chance of ID-based enumeration or
+  accidentally falling back to auth-based logic).
+- **View**: a new minimal Volt component + a stripped-down guest layout (no
+  main nav, no "Recipes / Collections / Profile / Logout", no links back into
+  the authenticated app). Renders only title, description, servings/times/
+  difficulty/cuisine, ingredients, steps, notes, and tags as plain text/chips
+  — no edit/delete/print-with-app-chrome/collection controls, no exposure of
+  the owning user's identity beyond perhaps a first name if ever desired.
+- **Query scope**: load *only* the recipe + ingredients/steps/tags relations
+  needed for display; never eager-load or expose `collections`, `recipe_scans`,
+  `user` email, etc.
+- **Anti-abuse**: rate-limit the shared route by IP (prevent token
+  brute-forcing/scraping) and set `<meta name="robots" content="noindex,nofollow">`
+  so shared links aren't crawled/indexed by search engines.
+- **Tests**: disabled-by-default (no token = 404), enabling generates a
+  working link, disabling/regenerating invalidates the old token, the shared
+  page never renders authenticated-only chrome or another user's data, and
+  the route is unaffected by `RecipePolicy`.
 
 ### Phase 7 — Hardening & Launch prep  *(P2)*
 - [ ] Queue reliability (failed_jobs handling, retries, alerting).

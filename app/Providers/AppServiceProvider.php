@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Extraction\Contracts\RecipeExtractor;
 use App\Extraction\Drivers\GeminiRecipeExtractor;
+use App\Extraction\Support\ScanRateLimiter;
 use App\Extraction\Support\UrlContentFetcher;
 use Illuminate\Support\ServiceProvider;
 
@@ -31,6 +32,13 @@ class AppServiceProvider extends ServiceProvider
                 maxBytes: (int) config('scanning.url.max_bytes'),
                 maxRedirects: (int) config('scanning.url.max_redirects'),
                 userAgent: (string) config('scanning.url.user_agent'),
+            );
+        });
+
+        $this->app->singleton(ScanRateLimiter::class, function (): ScanRateLimiter {
+            return new ScanRateLimiter(
+                perMinute: (int) config('scanning.rate_limit.per_minute'),
+                perDay: (int) config('scanning.rate_limit.per_day'),
             );
         });
     }

@@ -1,6 +1,7 @@
 <?php
 
 use function Livewire\Volt\{state, usesFileUploads};
+use App\Extraction\Support\ScanRateLimiter;
 use App\Jobs\ProcessRecipeScan;
 use App\Models\RecipeScan;
 use Illuminate\Support\Facades\Gate;
@@ -15,6 +16,13 @@ state([
 
 $scan = function () {
     Gate::authorize('create', RecipeScan::class);
+
+    $limiter = app(ScanRateLimiter::class);
+    if ($retryAfter = $limiter->tooManyAttempts(auth()->user())) {
+        $this->addError('file', $limiter->retryMessage($retryAfter));
+
+        return;
+    }
 
     $maxKb = (int) config('scanning.max_upload_kb');
     $mimes = implode(',', config('scanning.allowed_mimes'));
@@ -43,6 +51,8 @@ $scan = function () {
         'model' => config('scanning.model'),
     ]);
 
+    $limiter->hit(auth()->user());
+
     ProcessRecipeScan::dispatch($scan);
 
     $this->redirect(route('scans.show', $scan), navigate: true);
@@ -50,6 +60,13 @@ $scan = function () {
 
 $scanUrl = function () {
     Gate::authorize('create', RecipeScan::class);
+
+    $limiter = app(ScanRateLimiter::class);
+    if ($retryAfter = $limiter->tooManyAttempts(auth()->user())) {
+        $this->addError('url', $limiter->retryMessage($retryAfter));
+
+        return;
+    }
 
     $this->validate([
         'url' => ['required', 'url', 'max:2048', 'starts_with:http://,https://'],
@@ -63,6 +80,8 @@ $scanUrl = function () {
         'provider' => config('scanning.driver'),
         'model' => config('scanning.model'),
     ]);
+
+    $limiter->hit(auth()->user());
 
     ProcessRecipeScan::dispatch($scan);
 
