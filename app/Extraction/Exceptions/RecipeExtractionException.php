@@ -20,4 +20,19 @@ class RecipeExtractionException extends RuntimeException
     {
         return new self("Recipe extraction returned an invalid payload: {$message}");
     }
+
+    public static function unsafeUrl(string $reason): self
+    {
+        return new self("The URL could not be fetched: {$reason}");
+    }
+
+    public static function urlFetchFailed(string $message): self
+    {
+        return new self("Fetching the URL failed: {$message}");
+    }
+
+    public static function emptyPageContent(): self
+    {
+        return new self('No readable recipe content was found at that URL.');
+    }
 }

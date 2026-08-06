@@ -101,14 +101,16 @@ $delete = function () {
                                 @if ($group)
                                     <h3 class="mb-1 text-sm font-medium text-gray-500 dark:text-gray-400">{{ $group }}</h3>
                                 @endif
-                                <ul class="space-y-1 text-sm">
+                                <ul class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
                                     @foreach ($items as $ingredient)
-                                        <li class="flex gap-2">
-                                            <span class="font-medium">{{ trim($ingredient->quantity . ' ' . $ingredient->unit) }}</span>
-                                            <span>{{ $ingredient->name }}</span>
-                                            @if ($ingredient->note)
-                                                <span class="text-gray-500 dark:text-gray-400">({{ $ingredient->note }})</span>
-                                            @endif
+                                        <li class="col-span-2 grid grid-cols-subgrid">
+                                            <span class="whitespace-nowrap font-medium">{{ trim($ingredient->quantity . ' ' . $ingredient->unit) }}</span>
+                                            <span>
+                                                {{ $ingredient->name }}
+                                                @if ($ingredient->note)
+                                                    <span class="text-gray-500 dark:text-gray-400">({{ $ingredient->note }})</span>
+                                                @endif
+                                            </span>
                                         </li>
                                     @endforeach
                                 </ul>

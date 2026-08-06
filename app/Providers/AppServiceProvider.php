@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Extraction\Contracts\RecipeExtractor;
 use App\Extraction\Drivers\GeminiRecipeExtractor;
+use App\Extraction\Support\UrlContentFetcher;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -22,6 +23,15 @@ class AppServiceProvider extends ServiceProvider
                     timeout: (int) config('scanning.gemini.timeout'),
                 ),
             };
+        });
+
+        $this->app->singleton(UrlContentFetcher::class, function (): UrlContentFetcher {
+            return new UrlContentFetcher(
+                timeout: (int) config('scanning.url.timeout'),
+                maxBytes: (int) config('scanning.url.max_bytes'),
+                maxRedirects: (int) config('scanning.url.max_redirects'),
+                userAgent: (string) config('scanning.url.user_agent'),
+            );
         });
     }
 

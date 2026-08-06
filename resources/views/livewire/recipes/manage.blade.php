@@ -162,7 +162,7 @@ $save = function () {
 
 ?>
 
-@php($inputClass = 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-800')
+@php($inputClass = 'rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-800')
 
 <div>
     <div class="mb-6">
@@ -182,7 +182,7 @@ $save = function () {
             <div class="space-y-4">
                 <div>
                     <label for="title" class="mb-1 block text-sm font-medium">Title</label>
-                    <input wire:model="title" id="title" type="text" class="{{ $inputClass }}">
+                    <input wire:model="title" id="title" type="text" class="{{ $inputClass }} w-full">
                     @error('title')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -190,31 +190,31 @@ $save = function () {
 
                 <div>
                     <label for="description" class="mb-1 block text-sm font-medium">Description</label>
-                    <textarea wire:model="description" id="description" rows="2" class="{{ $inputClass }}"></textarea>
+                    <textarea wire:model="description" id="description" rows="2" class="{{ $inputClass }} w-full"></textarea>
                 </div>
 
                 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <div>
                         <label for="servings" class="mb-1 block text-sm font-medium">Servings</label>
-                        <input wire:model="servings" id="servings" type="text" class="{{ $inputClass }}">
+                        <input wire:model="servings" id="servings" type="text" class="{{ $inputClass }} w-full">
                     </div>
                     <div>
                         <label for="prep_minutes" class="mb-1 block text-sm font-medium">Prep (min)</label>
-                        <input wire:model="prep_minutes" id="prep_minutes" type="number" min="0" class="{{ $inputClass }}">
+                        <input wire:model="prep_minutes" id="prep_minutes" type="number" min="0" class="{{ $inputClass }} w-full">
                         @error('prep_minutes')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
                     <div>
                         <label for="cook_minutes" class="mb-1 block text-sm font-medium">Cook (min)</label>
-                        <input wire:model="cook_minutes" id="cook_minutes" type="number" min="0" class="{{ $inputClass }}">
+                        <input wire:model="cook_minutes" id="cook_minutes" type="number" min="0" class="{{ $inputClass }} w-full">
                         @error('cook_minutes')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
                     <div>
                         <label for="difficulty" class="mb-1 block text-sm font-medium">Difficulty</label>
-                        <select wire:model="difficulty" id="difficulty" class="{{ $inputClass }}">
+                        <select wire:model="difficulty" id="difficulty" class="{{ $inputClass }} w-full">
                             <option value="">—</option>
                             @foreach (App\Enums\RecipeDifficulty::cases() as $level)
                                 <option value="{{ $level->value }}">{{ $level->label() }}</option>
@@ -225,7 +225,7 @@ $save = function () {
 
                 <div>
                     <label for="cuisine" class="mb-1 block text-sm font-medium">Cuisine</label>
-                    <input wire:model="cuisine" id="cuisine" type="text" class="{{ $inputClass }}">
+                    <input wire:model="cuisine" id="cuisine" type="text" class="{{ $inputClass }} w-full">
                 </div>
             </div>
         </section>
@@ -247,7 +247,7 @@ $save = function () {
                         <input wire:model="ingredients.{{ $index }}.unit" type="text" placeholder="Unit"
                             class="{{ $inputClass }} sm:w-24">
                         <input wire:model="ingredients.{{ $index }}.name" type="text" placeholder="Ingredient"
-                            class="{{ $inputClass }} flex-1">
+                            class="{{ $inputClass }} min-w-0 flex-1">
                         <input wire:model="ingredients.{{ $index }}.group" type="text" placeholder="Section (optional)"
                             class="{{ $inputClass }} sm:w-40">
                         <button type="button" wire:click="removeIngredient({{ $index }})"
@@ -276,7 +276,7 @@ $save = function () {
                             {{ $index + 1 }}
                         </span>
                         <textarea wire:model="steps.{{ $index }}.instruction" rows="2" placeholder="Describe this step"
-                            class="{{ $inputClass }} flex-1"></textarea>
+                            class="{{ $inputClass }} min-w-0 flex-1"></textarea>
                         <input wire:model="steps.{{ $index }}.minutes" type="number" min="0" placeholder="Min"
                             class="{{ $inputClass }} w-20">
                         <button type="button" wire:click="removeStep({{ $index }})"
@@ -291,7 +291,7 @@ $save = function () {
 
         <section class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
             <label for="notes" class="mb-1 block text-base font-medium">Notes</label>
-            <textarea wire:model="notes" id="notes" rows="3" class="{{ $inputClass }}"></textarea>
+            <textarea wire:model="notes" id="notes" rows="3" class="{{ $inputClass }} w-full"></textarea>
         </section>
 
         <div class="flex items-center justify-end gap-3">

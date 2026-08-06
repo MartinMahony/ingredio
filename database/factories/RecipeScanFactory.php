@@ -32,4 +32,18 @@ class RecipeScanFactory extends Factory
             'source_kept' => false,
         ];
     }
+
+    /**
+     * @return Factory<RecipeScan>
+     */
+    public function url(string $url = 'https://example.test/recipe'): Factory
+    {
+        return $this->state([
+            'source_type' => 'url',
+            'source_url' => $url,
+            'source_disk' => null,
+            'source_path' => null,
+            'original_filename' => null,
+        ]);
+    }
 }

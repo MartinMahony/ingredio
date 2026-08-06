@@ -62,4 +62,23 @@ return [
 
     'disk' => env('SCAN_DISK', 'local'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Paste-a-URL Fetching
+    |--------------------------------------------------------------------------
+    |
+    | Constraints for fetching a recipe page pasted by the user. Fetching is
+    | SSRF-guarded: only http/https URLs resolving to public IP addresses are
+    | allowed, redirects are re-validated on every hop, and responses over
+    | max_bytes are rejected.
+    |
+    */
+
+    'url' => [
+        'timeout' => (int) env('SCAN_URL_TIMEOUT', 15),
+        'max_bytes' => (int) env('SCAN_URL_MAX_BYTES', 3_000_000),
+        'max_redirects' => (int) env('SCAN_URL_MAX_REDIRECTS', 3),
+        'user_agent' => env('SCAN_URL_USER_AGENT', 'IngredioBot/1.0 (+recipe import)'),
+    ],
+
 ];

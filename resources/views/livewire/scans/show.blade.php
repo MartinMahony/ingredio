@@ -38,14 +38,14 @@ $status = computed(fn () => $this->scan->status);
             </div>
             <h1 class="text-lg font-semibold">We couldn't read that recipe</h1>
             <p class="mt-1 max-w-sm text-sm text-gray-600 dark:text-gray-400">
-                The extraction failed. Try a clearer screenshot or a different file.
+                The extraction failed. Try a clearer screenshot, a different file, or another URL.
             </p>
             @if ($scan->error)
                 <p class="mt-3 max-w-sm text-xs text-red-500">{{ $scan->error }}</p>
             @endif
             <a href="{{ route('scans.create') }}" wire:navigate
                 class="mt-5 rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700">
-                Try another file
+                Try again
             </a>
         </div>
     @else
@@ -60,7 +60,9 @@ $status = computed(fn () => $this->scan->status);
             <p class="mt-1 max-w-sm text-sm text-gray-500 dark:text-gray-400">
                 We're extracting the ingredients and steps. This usually takes a few seconds.
             </p>
-            @if ($scan->original_filename)
+            @if ($scan->source_url)
+                <p class="mt-4 break-all text-xs text-gray-400">{{ $scan->source_url }}</p>
+            @elseif ($scan->original_filename)
                 <p class="mt-4 text-xs text-gray-400">{{ $scan->original_filename }}</p>
             @endif
         </div>

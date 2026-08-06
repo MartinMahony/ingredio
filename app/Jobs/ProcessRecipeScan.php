@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Actions\StoreExtractedRecipe;
 use App\Extraction\Contracts\RecipeExtractor;
 use App\Extraction\Data\ScanSource;
+use App\Extraction\Support\UrlContentFetcher;
 use App\Models\RecipeScan;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -21,27 +22,44 @@ class ProcessRecipeScan implements ShouldQueue
 
     public function __construct(public RecipeScan $scan) {}
 
-    public function handle(RecipeExtractor $extractor, StoreExtractedRecipe $store): void
+    public function handle(RecipeExtractor $extractor, StoreExtractedRecipe $store, UrlContentFetcher $fetcher): void
     {
         $this->scan->markProcessing();
 
-        $disk = Storage::disk($this->scan->source_disk);
-        $contents = $disk->get($this->scan->source_path);
-        $mimeType = $disk->mimeType($this->scan->source_path) ?: 'application/octet-stream';
-
-        $source = ScanSource::fromContents($contents, $mimeType);
+        $source = $this->scan->source_type === 'url'
+            ? ScanSource::fromText($fetcher->fetch($this->scan->source_url))
+            : $this->readSourceFile();
 
         $extracted = $extractor->extract($source);
 
         $recipe = $store($this->scan->user, $extracted, [
             'source_type' => $this->scan->source_type,
+            'source_url' => $this->scan->source_url,
             'extracted_at' => now(),
         ]);
 
         $this->scan->markReady($recipe);
 
+        $this->cleanupSource();
+    }
+
+    private function readSourceFile(): ScanSource
+    {
+        $disk = Storage::disk($this->scan->source_disk);
+        $contents = $disk->get($this->scan->source_path);
+        $mimeType = $disk->mimeType($this->scan->source_path) ?: 'application/octet-stream';
+
+        return ScanSource::fromContents($contents, $mimeType);
+    }
+
+    private function cleanupSource(): void
+    {
+        if ($this->scan->source_type === 'url') {
+            return;
+        }
+
         if (! config('scanning.keep_source')) {
-            $disk->delete($this->scan->source_path);
+            Storage::disk($this->scan->source_disk)->delete($this->scan->source_path);
             $this->scan->update(['source_kept' => false]);
         } else {
             $this->scan->update(['source_kept' => true]);

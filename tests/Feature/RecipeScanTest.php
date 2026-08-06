@@ -6,6 +6,7 @@ use App\Extraction\Contracts\RecipeExtractor;
 use App\Extraction\Data\ScanSource;
 use App\Extraction\Drivers\GeminiRecipeExtractor;
 use App\Extraction\Exceptions\RecipeExtractionException;
+use App\Extraction\Support\UrlContentFetcher;
 use App\Jobs\ProcessRecipeScan;
 use App\Models\Recipe;
 use App\Models\RecipeScan;
@@ -80,6 +81,7 @@ it('processes a scan and stores the extracted recipe', function () {
     (new ProcessRecipeScan($scan))->handle(
         app(RecipeExtractor::class),
         app(StoreExtractedRecipe::class),
+        app(UrlContentFetcher::class),
     );
 
     $scan->refresh();
@@ -118,6 +120,7 @@ it('retains the source file when keep_source is enabled', function () {
     (new ProcessRecipeScan($scan))->handle(
         app(RecipeExtractor::class),
         app(StoreExtractedRecipe::class),
+        app(UrlContentFetcher::class),
     );
 
     Storage::disk('local')->assertExists('scans/recipe.png');

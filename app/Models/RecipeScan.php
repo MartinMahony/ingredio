@@ -15,6 +15,7 @@ use Illuminate\Support\Str;
     'recipe_id',
     'status',
     'source_type',
+    'source_url',
     'source_disk',
     'source_path',
     'original_filename',

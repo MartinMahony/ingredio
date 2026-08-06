@@ -50,11 +50,13 @@ class GeminiRecipeExtractor implements RecipeExtractor
         return [
             'contents' => [[
                 'parts' => [
-                    ['text' => $this->prompt()],
-                    ['inline_data' => [
-                        'mime_type' => $source->mimeType,
-                        'data' => $source->base64(),
-                    ]],
+                    ['text' => $this->prompt($source)],
+                    $source->isText
+                        ? ['text' => $source->contents]
+                        : ['inline_data' => [
+                            'mime_type' => $source->mimeType,
+                            'data' => $source->base64(),
+                        ]],
                 ],
             ]],
             'generationConfig' => [
@@ -86,15 +88,19 @@ class GeminiRecipeExtractor implements RecipeExtractor
         return $decoded;
     }
 
-    private function prompt(): string
+    private function prompt(ScanSource $source): string
     {
-        return <<<'PROMPT'
-        You are a precise recipe extraction assistant. The attached file is a screenshot,
-        photo, or PDF of a single cooking recipe. Extract the recipe into the required JSON
-        structure.
+        $subject = $source->isText
+            ? 'The following text was extracted from a recipe webpage'
+            : 'The attached file is a screenshot, photo, or PDF of a single cooking recipe';
+
+        return <<<PROMPT
+        You are a precise recipe extraction assistant. {$subject}. Extract the recipe
+        into the required JSON structure.
 
         Rules:
         - Transcribe values exactly as written. Do not invent, translate, or add ingredients or steps.
+        - Ignore navigation menus, ads, comments, or other content unrelated to the recipe itself.
         - Keep ingredient quantities and units separate from the ingredient name (e.g. quantity "2",
           unit "cups", name "flour").
         - Preserve any ingredient section headings (e.g. "For the sauce") in the "group" field.

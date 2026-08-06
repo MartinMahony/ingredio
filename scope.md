@@ -157,12 +157,17 @@ Work top-to-bottom; each phase should end green (tests pass, Pint clean).
 - [x] Delete source file on success (respect `keep_source`).
 - [x] Tests: upload validation, job dispatch, status transitions, review save.
 
-### Phase 4 — Paste-a-URL Import  *(P1)*
-- [ ] URL input component + validation (SSRF-safe fetch: allowlist scheme, block
-      internal IPs, timeout, size cap).
-- [ ] Fetch + clean page content (readability / strip boilerplate).
-- [ ] Feed cleaned text to the same extractor pipeline (`source_type = url`).
-- [ ] Tests with a stubbed HTTP response.
+### Phase 4 — Paste-a-URL Import  *(P1)*  ✅ Done
+- [x] URL input component + validation (SSRF-safe fetch: allowlist scheme, block
+      internal IPs, timeout, size cap). `UrlSafetyValidator` blocks non-http(s)
+      schemes and re-validates every redirect hop against public IP ranges only.
+- [x] Fetch + clean page content (`UrlContentFetcher` + `HtmlTextExtractor`, using
+      PHP's built-in DOMDocument — no new dependency needed).
+- [x] Feed cleaned text to the same extractor pipeline (`source_type = url`,
+      `ScanSource::fromText()`, `recipe_scans.source_url`).
+- [x] "Paste a URL" tab added to the existing scan page (`scans.create`).
+- [x] Tests with stubbed HTTP responses: SSRF validation, redirect handling, size
+      caps, end-to-end job processing, and the Livewire URL flow (18 tests).
 
 ### Phase 5 — Organisation: Tags, Collections, Search  *(P1)*
 - [ ] `tags` + pivot; AI-suggested tags on extraction; manual tag editing.
