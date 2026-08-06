@@ -252,26 +252,24 @@ $disableSharing = function () {
                     <p class="text-sm text-gray-500 dark:text-gray-400">No ingredients listed.</p>
                 @else
                     @php($ingredientGroups = $recipe->ingredients->groupBy('group'))
-                    <div class="space-y-4">
+                    <div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-4 text-sm">
                         @foreach ($ingredientGroups as $group => $items)
-                            <div>
-                                @if ($group)
-                                    <h3 class="mb-1 text-sm font-medium text-gray-500 dark:text-gray-400">{{ $group }}</h3>
-                                @endif
-                                <ul class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
-                                    @foreach ($items as $ingredient)
-                                        <li class="col-span-2 grid grid-cols-subgrid">
-                                            <span class="whitespace-nowrap font-medium">{{ trim($ingredient->quantity . ' ' . $ingredient->unit) }}</span>
-                                            <span>
-                                                {{ $ingredient->name }}
-                                                @if ($ingredient->note)
-                                                    <span class="text-gray-500 dark:text-gray-400">({{ $ingredient->note }})</span>
-                                                @endif
-                                            </span>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            </div>
+                            @if ($group)
+                                <h3 class="col-span-2 text-sm font-medium text-gray-500 dark:text-gray-400">{{ $group }}</h3>
+                            @endif
+                            <ul class="col-span-2 grid grid-cols-subgrid gap-y-1.5">
+                                @foreach ($items as $ingredient)
+                                    <li class="col-span-2 grid grid-cols-subgrid">
+                                        <span class="whitespace-nowrap font-medium">{{ trim($ingredient->quantity . ' ' . $ingredient->unit) }}</span>
+                                        <span>
+                                            {{ $ingredient->name }}
+                                            @if ($ingredient->note)
+                                                <span class="text-gray-500 dark:text-gray-400">({{ $ingredient->note }})</span>
+                                            @endif
+                                        </span>
+                                    </li>
+                                @endforeach
+                            </ul>
                         @endforeach
                     </div>
                 @endif
