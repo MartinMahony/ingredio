@@ -25,6 +25,10 @@
                         class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
                         Recipes
                     </a>
+                    <a href="{{ route('collections.index') }}" wire:navigate
+                        class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                        Collections
+                    </a>
                     <a href="{{ route('profile') }}" wire:navigate
                         class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
                         {{ auth()->user()?->name }}

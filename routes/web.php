@@ -24,6 +24,9 @@ Route::middleware('auth')->group(function () {
     Volt::route('recipes/{recipe}', 'recipes.show')->name('recipes.show');
     Volt::route('recipes/{recipe}/edit', 'recipes.manage')->name('recipes.edit');
 
+    Volt::route('collections', 'collections.index')->name('collections.index');
+    Volt::route('collections/{collection}', 'collections.show')->name('collections.show');
+
     Route::post('logout', function () {
         Auth::guard('web')->logout();
 

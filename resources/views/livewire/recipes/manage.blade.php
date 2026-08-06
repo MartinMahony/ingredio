@@ -1,6 +1,7 @@
 <?php
 
 use function Livewire\Volt\{state, mount, rules};
+use App\Actions\SyncRecipeTags;
 use App\Enums\RecipeDifficulty;
 use App\Models\Recipe;
 use Illuminate\Support\Facades\Gate;
@@ -18,6 +19,7 @@ state([
     'notes' => '',
     'ingredients' => [],
     'steps' => [],
+    'tags' => '',
 ]);
 
 mount(function (?Recipe $recipe = null) {
@@ -46,6 +48,8 @@ mount(function (?Recipe $recipe = null) {
             'instruction' => $s->instruction,
             'minutes' => (string) $s->minutes,
         ])->all();
+
+        $this->tags = $recipe->tags->pluck('name')->implode(', ');
     } else {
         Gate::authorize('create', Recipe::class);
     }
@@ -157,6 +161,8 @@ $save = function () {
         ]);
     }
 
+    app(SyncRecipeTags::class)(auth()->user(), $recipe, explode(',', $this->tags));
+
     $this->redirect(route('recipes.show', $recipe), navigate: true);
 };
 
@@ -227,6 +233,13 @@ $save = function () {
                     <label for="cuisine" class="mb-1 block text-sm font-medium">Cuisine</label>
                     <input wire:model="cuisine" id="cuisine" type="text" class="{{ $inputClass }} w-full">
                 </div>
+
+                <div>
+                    <label for="tags" class="mb-1 block text-sm font-medium">Tags</label>
+                    <input wire:model="tags" id="tags" type="text" placeholder="e.g. vegetarian, soup, italian"
+                        class="{{ $inputClass }} w-full">
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Comma-separated.</p>
+                </div>
             </div>
         </section>
 
@@ -271,16 +284,16 @@ $save = function () {
 
             <div class="space-y-3">
                 @foreach ($steps as $index => $step)
-                    <div wire:key="step-{{ $index }}" class="flex items-start gap-2">
-                        <span class="mt-2 flex h-6 w-6 flex-none items-center justify-center rounded-full bg-gray-100 text-sm font-medium dark:bg-gray-800">
+                    <div wire:key="step-{{ $index }}" class="flex items-center gap-2">
+                        <span class="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-gray-100 text-sm font-medium dark:bg-gray-800">
                             {{ $index + 1 }}
                         </span>
-                        <textarea wire:model="steps.{{ $index }}.instruction" rows="2" placeholder="Describe this step"
+                        <textarea wire:model="steps.{{ $index }}.instruction" rows="1" placeholder="Describe this step"
                             class="{{ $inputClass }} min-w-0 flex-1"></textarea>
                         <input wire:model="steps.{{ $index }}.minutes" type="number" min="0" placeholder="Min"
                             class="{{ $inputClass }} w-20">
                         <button type="button" wire:click="removeStep({{ $index }})"
-                            class="mt-1 rounded-md p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
+                            class="rounded-md p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
                             title="Remove">
                             &times;
                         </button>

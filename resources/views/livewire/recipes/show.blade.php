@@ -1,15 +1,16 @@
 <?php
 
-use function Livewire\Volt\{state, mount};
+use function Livewire\Volt\{state, mount, computed};
+use App\Models\Collection;
 use App\Models\Recipe;
 use Illuminate\Support\Facades\Gate;
 
-state(['recipe' => null]);
+state(['recipe' => null, 'selectedCollectionId' => '']);
 
 mount(function (Recipe $recipe) {
     Gate::authorize('view', $recipe);
 
-    $this->recipe = $recipe->load(['ingredients', 'steps']);
+    $this->recipe = $recipe->load(['ingredients', 'steps', 'tags', 'collections']);
 });
 
 $delete = function () {
@@ -18,6 +19,33 @@ $delete = function () {
     $this->recipe->delete();
 
     $this->redirect(route('dashboard'), navigate: true);
+};
+
+$availableCollections = computed(function () {
+    $inCollectionIds = $this->recipe->collections->pluck('id');
+
+    return auth()->user()->collections()->whereNotIn('id', $inCollectionIds)->orderBy('name')->get();
+});
+
+$addToCollection = function () {
+    if ($this->selectedCollectionId === '') {
+        return;
+    }
+
+    $collection = Collection::findOrFail($this->selectedCollectionId);
+    Gate::authorize('update', $collection);
+
+    $collection->recipes()->syncWithoutDetaching([$this->recipe->id]);
+    $this->recipe->load('collections');
+    $this->selectedCollectionId = '';
+};
+
+$removeFromCollection = function (int $collectionId) {
+    $collection = Collection::findOrFail($collectionId);
+    Gate::authorize('update', $collection);
+
+    $collection->recipes()->detach($this->recipe->id);
+    $this->recipe->load('collections');
 };
 
 ?>
@@ -86,6 +114,51 @@ $delete = function () {
                     </div>
                 @endif
             </dl>
+
+            @if ($recipe->tags->isNotEmpty())
+                <div class="mt-4 flex flex-wrap gap-2">
+                    @foreach ($recipe->tags as $tag)
+                        <span
+                            class="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                            {{ $tag->name }}
+                        </span>
+                    @endforeach
+                </div>
+            @endif
+
+            <div class="mt-4 print:hidden">
+                <h3 class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    Collections
+                </h3>
+                <div class="flex flex-wrap items-center gap-2">
+                    @foreach ($recipe->collections as $collection)
+                        <span
+                            class="flex items-center gap-1 rounded-full bg-orange-50 py-1 pl-2.5 pr-1 text-xs font-medium text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+                            {{ $collection->name }}
+                            <button type="button" wire:click="removeFromCollection({{ $collection->id }})"
+                                class="rounded-full p-0.5 hover:bg-orange-100 dark:hover:bg-orange-900/60" title="Remove">
+                                &times;
+                            </button>
+                        </span>
+                    @endforeach
+
+                    @if ($this->availableCollections->isNotEmpty())
+                        <form wire:submit="addToCollection" class="flex items-center gap-1">
+                            <select wire:model="selectedCollectionId"
+                                class="rounded-md border-gray-300 py-1 text-xs shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-800">
+                                <option value="">Add to collection&hellip;</option>
+                                @foreach ($this->availableCollections as $collection)
+                                    <option value="{{ $collection->id }}">{{ $collection->name }}</option>
+                                @endforeach
+                            </select>
+                            <button type="submit"
+                                class="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
+                                Add
+                            </button>
+                        </form>
+                    @endif
+                </div>
+            </div>
         </header>
 
         <div class="grid gap-8 md:grid-cols-3">

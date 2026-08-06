@@ -1,16 +1,40 @@
 <?php
 
-use function Livewire\Volt\{computed};
+use function Livewire\Volt\{state, computed};
 use App\Models\Recipe;
 use Illuminate\Support\Facades\Gate;
+
+state(['search' => '', 'cuisine' => '', 'tag' => '']);
 
 $recipes = computed(function () {
     return auth()->user()
         ->recipes()
         ->withCount(['ingredients', 'steps'])
+        ->when($this->search !== '', fn ($query) => $query->where(function ($query) {
+            $query->where('title', 'like', "%{$this->search}%")
+                ->orWhereHas('ingredients', fn ($query) => $query->where('name', 'like', "%{$this->search}%"));
+        }))
+        ->when($this->cuisine !== '', fn ($query) => $query->where('cuisine', $this->cuisine))
+        ->when($this->tag !== '', fn ($query) => $query->whereHas('tags', fn ($query) => $query->where('tags.id', $this->tag)))
         ->latest()
         ->get();
 });
+
+$cuisines = computed(function () {
+    return auth()->user()->recipes()->whereNotNull('cuisine')->distinct()->orderBy('cuisine')->pluck('cuisine');
+});
+
+$tags = computed(function () {
+    return auth()->user()->tags()->orderBy('name')->get();
+});
+
+$hasAnyRecipes = computed(fn () => auth()->user()->recipes()->exists());
+
+$clearFilters = function () {
+    $this->search = '';
+    $this->cuisine = '';
+    $this->tag = '';
+};
 
 $delete = function (Recipe $recipe) {
     Gate::authorize('delete', $recipe);
@@ -43,7 +67,7 @@ $delete = function (Recipe $recipe) {
         </div>
     </div>
 
-    @if ($this->recipes->isEmpty())
+    @if (! $this->hasAnyRecipes)
         <div
             class="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-white p-12 text-center dark:border-gray-700 dark:bg-gray-900">
             <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-orange-50 dark:bg-orange-900/30">
@@ -69,6 +93,46 @@ $delete = function (Recipe $recipe) {
             </div>
         </div>
     @else
+        <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <input wire:model.live.debounce.300ms="search" type="search" placeholder="Search by title or ingredient&hellip;"
+                class="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:max-w-xs dark:border-gray-700 dark:bg-gray-900">
+
+            <select wire:model.live="cuisine"
+                class="rounded-md border-gray-300 text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900">
+                <option value="">All cuisines</option>
+                @foreach ($this->cuisines as $cuisineOption)
+                    <option value="{{ $cuisineOption }}">{{ $cuisineOption }}</option>
+                @endforeach
+            </select>
+
+            @if ($this->tags->isNotEmpty())
+                <select wire:model.live="tag"
+                    class="rounded-md border-gray-300 text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900">
+                    <option value="">All tags</option>
+                    @foreach ($this->tags as $tagOption)
+                        <option value="{{ $tagOption->id }}">{{ $tagOption->name }}</option>
+                    @endforeach
+                </select>
+            @endif
+
+            @if ($search !== '' || $cuisine !== '' || $tag !== '')
+                <button type="button" wire:click="clearFilters"
+                    class="text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
+                    Clear filters
+                </button>
+            @endif
+        </div>
+
+        @if ($this->recipes->isEmpty())
+            <div
+                class="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-white p-12 text-center dark:border-gray-700 dark:bg-gray-900">
+                <h2 class="text-base font-medium">No recipes match your filters</h2>
+                <button type="button" wire:click="clearFilters"
+                    class="mt-4 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800">
+                    Clear filters
+                </button>
+            </div>
+        @else
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @foreach ($this->recipes as $recipe)
                 <div wire:key="recipe-{{ $recipe->id }}"
@@ -108,5 +172,6 @@ $delete = function (Recipe $recipe) {
                 </div>
             @endforeach
         </div>
+        @endif
     @endif
 </div>

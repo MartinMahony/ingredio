@@ -169,11 +169,17 @@ Work top-to-bottom; each phase should end green (tests pass, Pint clean).
 - [x] Tests with stubbed HTTP responses: SSRF validation, redirect handling, size
       caps, end-to-end job processing, and the Livewire URL flow (18 tests).
 
-### Phase 5 — Organisation: Tags, Collections, Search  *(P1)*
-- [ ] `tags` + pivot; AI-suggested tags on extraction; manual tag editing.
-- [ ] `collections` + pivot; add/remove recipe to/from collections.
-- [ ] Search + filter library (by title, ingredient, tag, cuisine).
-- [ ] Tests for tagging, collections, search.
+### Phase 5 — Organisation: Tags, Collections, Search  *(P1)*  ✅ Done
+- [x] `tags` + pivot (user-scoped, unique per user); AI-suggested tags wired
+      into `StoreExtractedRecipe` via a shared `SyncRecipeTags` action;
+      manual comma-separated tag editing on the recipe form.
+- [x] `collections` + pivot; create/delete collections, add/remove a recipe
+      to/from a collection from the recipe detail page, dedicated
+      `collections.index` / `collections.show` pages, nav link.
+- [x] Search + filter library on the dashboard (title, ingredient name,
+      cuisine dropdown, tag dropdown), with a distinct "no matches" vs.
+      "no recipes yet" empty state.
+- [x] Tests for tagging, collections, and search (21 tests).
 
 ### Phase 6 — Polish, Export & Sharing  *(P2)*
 - [ ] Export recipe (Markdown / JSON / print stylesheet / PDF).

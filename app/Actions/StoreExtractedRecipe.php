@@ -7,10 +7,14 @@ use App\Models\Recipe;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
+// @phpstan-ignore-next-line
+
 class StoreExtractedRecipe
 {
+    public function __construct(private readonly SyncRecipeTags $syncTags) {}
+
     /**
-     * Persist an extracted recipe (and its ingredients and steps) for a user.
+     * Persist an extracted recipe (and its ingredients, steps, and tags) for a user.
      *
      * @param  array<string, mixed>  $attributes  Extra recipe attributes (e.g. source_type, extracted_at).
      */
@@ -51,6 +55,8 @@ class StoreExtractedRecipe
                     'minutes' => $step->minutes,
                 ]);
             }
+
+            ($this->syncTags)($user, $recipe, $data->tags);
 
             return $recipe;
         });
