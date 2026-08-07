@@ -29,6 +29,8 @@ use Illuminate\Support\Str;
     'source_type',
     'source_url',
     'notes',
+    'is_favorite',
+    'last_cooked_at',
     'status',
     'extracted_at',
 ])]
@@ -51,6 +53,8 @@ class Recipe extends Model
             'protein_grams' => 'decimal:1',
             'carbs_grams' => 'decimal:1',
             'fat_grams' => 'decimal:1',
+            'is_favorite' => 'boolean',
+            'last_cooked_at' => 'datetime',
             'extracted_at' => 'datetime',
             'shared_at' => 'datetime',
         ];
@@ -107,6 +111,16 @@ class Recipe extends Model
             || $this->protein_grams !== null
             || $this->carbs_grams !== null
             || $this->fat_grams !== null;
+    }
+
+    public function toggleFavorite(): void
+    {
+        $this->forceFill(['is_favorite' => ! $this->is_favorite])->save();
+    }
+
+    public function markCooked(): void
+    {
+        $this->forceFill(['last_cooked_at' => now()])->save();
     }
 
     /**

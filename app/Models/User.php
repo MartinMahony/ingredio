@@ -54,4 +54,12 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(Collection::class);
     }
+
+    /**
+     * @return HasMany<RecipeScan, $this>
+     */
+    public function recipeScans(): HasMany
+    {
+        return $this->hasMany(RecipeScan::class);
+    }
 }

@@ -85,6 +85,20 @@ $duplicate = function () {
     $this->redirect(route('recipes.edit', $copy), navigate: true);
 };
 
+$toggleFavorite = function () {
+    Gate::authorize('update', $this->recipe);
+
+    $this->recipe->toggleFavorite();
+    $this->recipe->refresh();
+};
+
+$markCooked = function () {
+    Gate::authorize('update', $this->recipe);
+
+    $this->recipe->markCooked();
+    $this->recipe->refresh();
+};
+
 ?>
 
 <div x-data="{ cooking: false, checked: [] }">
@@ -103,6 +117,18 @@ $duplicate = function () {
                 x-text="cooking ? 'Stop cooking' : 'Cook mode'"
                 class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
                 Cook mode
+            </button>
+            <button type="button" wire:click="toggleFavorite" wire:loading.attr="disabled" wire:target="toggleFavorite"
+                class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
+                <span wire:loading.remove wire:target="toggleFavorite">
+                    {{ $recipe->is_favorite ? 'Unfavorite' : 'Favorite' }}
+                </span>
+                <span wire:loading wire:target="toggleFavorite">Saving&hellip;</span>
+            </button>
+            <button type="button" wire:click="markCooked" wire:loading.attr="disabled" wire:target="markCooked"
+                class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
+                <span wire:loading.remove wire:target="markCooked">Mark cooked</span>
+                <span wire:loading wire:target="markCooked">Saving&hellip;</span>
             </button>
             <a href="{{ route('recipes.edit', $recipe) }}" wire:navigate
                 class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
@@ -167,6 +193,12 @@ $duplicate = function () {
                                 {{ $recipe->cuisine }}
                             </a>
                         </dd>
+                    </div>
+                @endif
+                @if ($recipe->last_cooked_at)
+                    <div>
+                        <dt class="text-gray-500 dark:text-gray-400">Last cooked</dt>
+                        <dd class="font-medium">{{ $recipe->last_cooked_at->diffForHumans() }}</dd>
                     </div>
                 @endif
             </dl>

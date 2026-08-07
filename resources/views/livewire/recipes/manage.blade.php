@@ -1,6 +1,6 @@
 <?php
 
-use function Livewire\Volt\{state, mount, rules};
+use function Livewire\Volt\{state, mount, rules, computed};
 use App\Actions\SyncRecipeTags;
 use App\Enums\RecipeDifficulty;
 use App\Models\Recipe;
@@ -25,6 +25,10 @@ state([
     'steps' => [],
     'tags' => '',
 ]);
+
+$existingTags = computed(function () {
+    return auth()->user()->tags()->orderBy('name')->pluck('name');
+});
 
 mount(function (?Recipe $recipe = null) {
     if ($recipe && $recipe->exists) {
@@ -305,8 +309,13 @@ $save = function () {
                 <div>
                     <label for="tags" class="mb-1 block text-sm font-medium">Tags</label>
                     <input wire:model="tags" id="tags" type="text" placeholder="e.g. vegetarian, soup, italian"
-                        class="{{ $inputClass }} w-full">
+                        list="existing-tags" class="{{ $inputClass }} w-full">
                     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Comma-separated.</p>
+                    <datalist id="existing-tags">
+                        @foreach ($this->existingTags as $existingTag)
+                            <option value="{{ $existingTag }}"></option>
+                        @endforeach
+                    </datalist>
                 </div>
             </div>
         </section>

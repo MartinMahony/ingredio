@@ -98,7 +98,13 @@ $scanUrl = function () {
             class="text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
             &larr; Back to recipes
         </a>
-        <h1 class="mt-2 text-2xl font-semibold tracking-tight">Scan a recipe</h1>
+        <div class="mt-2 flex items-center justify-between">
+            <h1 class="text-2xl font-semibold tracking-tight">Scan a recipe</h1>
+            <a href="{{ route('scans.index') }}" wire:navigate
+                class="text-sm text-orange-600 hover:underline">
+                History
+            </a>
+        </div>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Upload a screenshot, photo, or PDF, or paste a link, and we'll extract the recipe for you to review.
         </p>

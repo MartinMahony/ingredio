@@ -7,6 +7,11 @@ use App\Models\User;
 
 class RecipeScanPolicy
 {
+    public function viewAny(User $user): bool
+    {
+        return true;
+    }
+
     public function view(User $user, RecipeScan $scan): bool
     {
         return $user->id === $scan->user_id;

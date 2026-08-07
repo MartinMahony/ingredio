@@ -13,6 +13,7 @@ use App\Models\RecipeScan;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Volt\Volt;
 
 /**
  * @param  array<string, mixed>  $recipe
@@ -299,3 +300,37 @@ it('driver throws when the http request fails', function () {
 
     $extractor->extract(ScanSource::fromContents('bytes', 'image/png'));
 })->throws(RecipeExtractionException::class);
+
+test('a user can view their scan history', function () {
+    $user = User::factory()->create();
+    $scan = RecipeScan::factory()->for($user)->create();
+
+    $this->actingAs($user)
+        ->get(route('scans.index'))
+        ->assertOk()
+        ->assertSee('Scan history')
+        ->assertSee($scan->original_filename);
+});
+
+test('a user can delete a scan from their history', function () {
+    $user = User::factory()->create();
+    $scan = RecipeScan::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    Volt::test('scans.index')
+        ->call('delete', $scan->id)
+        ->assertHasNoErrors();
+
+    $this->assertDatabaseMissing('recipe_scans', ['id' => $scan->id]);
+});
+
+test('a user cannot view another users scan history', function () {
+    $user = User::factory()->create();
+    RecipeScan::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('scans.index'))
+        ->assertOk()
+        ->assertDontSee('recipe.png');
+});

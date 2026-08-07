@@ -99,13 +99,23 @@
 
 ---
 
-## Wave 5 — P2: Advanced Features (later)
+## Wave 5 — P2: Advanced Features
 
-- [ ] **Bulk actions on the dashboard**: select multiple recipes → add to collection / delete.
-- [ ] **Favorites / "cooked" tracking**: `is_favorite` boolean or `last_cooked_at` timestamp to help rediscovery.
-- [ ] **Tag autocomplete** using a native `<datalist>` of existing tags to reduce fragmentation ("soup" vs "soups").
-- [ ] **Recent scans list / scan history** so failed scans are easy to find again.
-- [ ] **Recipe preview modal** from the dashboard to quickly glance at ingredients without opening the full page.
+- [x] **Bulk actions on the dashboard**: select multiple recipes → add to collection / delete.
+  - Added checkboxes on each card, a bulk toolbar with select all / add to collection / delete selected, and `wire:loading` states.
+  - File: `resources/views/livewire/dashboard.blade.php`.
+- [x] **Favorites / "cooked" tracking**: `is_favorite` boolean or `last_cooked_at` timestamp to help rediscovery.
+  - Added `is_favorite` and `last_cooked_at` columns to `recipes`, Favorite/Mark cooked actions on `recipes.show`, favorite sort/recently-cooked sort, and favorite/last-cooked indicators on cards.
+  - File: `app/Models/Recipe.php`, `resources/views/livewire/recipes/show.blade.php`, `resources/views/livewire/dashboard.blade.php`.
+- [x] **Tag autocomplete** using a native `<datalist>` of existing tags to reduce fragmentation ("soup" vs "soups").
+  - Added a `<datalist>` of the user's existing tags to the recipe form tags input.
+  - File: `resources/views/livewire/recipes/manage.blade.php`.
+- [x] **Recent scans list / scan history** so failed scans are easy to find again.
+  - Added `scans.index` route and component, showing recent scans with status, source, links, and delete.
+  - File: `routes/web.php`, `resources/views/livewire/scans/index.blade.php`, `app/Models/User.php`, `app/Policies/RecipeScanPolicy.php`.
+- [x] **Recipe preview modal** from the dashboard to quickly glance at ingredients without opening the full page.
+  - Added a "Quick view" button on cards that opens a modal with ingredients, steps, and a link to the full recipe.
+  - File: `resources/views/livewire/dashboard.blade.php`.
 
 ---
 

@@ -177,6 +177,43 @@ test('the dashboard only lists the current users recipes', function () {
         ->assertDontSee('Theirs');
 });
 
+test('a user can favorite and unfavorite their recipe', function () {
+    $user = User::factory()->create();
+    $recipe = Recipe::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    Volt::test('recipes.show', ['recipe' => $recipe])
+        ->call('toggleFavorite');
+
+    expect($recipe->fresh()->is_favorite)->toBeTrue();
+
+    Volt::test('recipes.show', ['recipe' => $recipe])
+        ->call('toggleFavorite');
+
+    expect($recipe->fresh()->is_favorite)->toBeFalse();
+});
+
+test('a user can mark their recipe as cooked', function () {
+    $user = User::factory()->create();
+    $recipe = Recipe::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    Volt::test('recipes.show', ['recipe' => $recipe])
+        ->call('markCooked');
+
+    expect($recipe->fresh()->last_cooked_at)->not->toBeNull();
+});
+
+test('a user cannot view or modify another users recipe', function () {
+    $recipe = Recipe::factory()->create();
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('recipes.show', $recipe))
+        ->assertForbidden();
+});
+
 test('recipe description and notes are limited to 10000 characters', function () {
     $this->actingAs(User::factory()->create());
 
