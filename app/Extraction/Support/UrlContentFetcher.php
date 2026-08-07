@@ -39,7 +39,7 @@ class UrlContentFetcher
 
     private function fetchHtml(string $url, int $redirectsRemaining): string
     {
-        UrlSafetyValidator::ensureSafe($url);
+        $safeIps = UrlSafetyValidator::ensureSafe($url);
 
         $startedAt = microtime(true);
 
@@ -47,7 +47,13 @@ class UrlContentFetcher
             $response = Http::withHeaders(['User-Agent' => $this->userAgent])
                 ->connectTimeout($this->connectTimeout)
                 ->timeout($this->timeout)
-                ->withOptions(['allow_redirects' => false, 'stream' => true])
+                ->withOptions([
+                    'allow_redirects' => false,
+                    'stream' => true,
+                    'curl' => [
+                        CURLOPT_RESOLVE => $this->buildResolve($url, $safeIps),
+                    ],
+                ])
                 ->get($url);
         } catch (ConnectionException $e) {
             $this->logFetch($url, $startedAt, error: $e->getMessage());
@@ -80,6 +86,37 @@ class UrlContentFetcher
         $this->logFetch($url, $startedAt, status: $response->status(), bytes: strlen($body));
 
         return $body;
+    }
+
+    /**
+     * Pin the hostname to one of the already-validated public IPs so the
+     * connection cannot be redirected by a later DNS rebinding attack.
+     *
+     * @param  array<int, string>  $safeIps
+     * @return array<int, string>
+     */
+    private function buildResolve(string $url, array $safeIps): array
+    {
+        $parts = parse_url($url);
+        $host = $parts['host'] ?? '';
+
+        if ($host === '' || filter_var($host, FILTER_VALIDATE_IP)) {
+            return [];
+        }
+
+        $scheme = strtolower($parts['scheme'] ?? 'http');
+        $port = $parts['port'] ?? ($scheme === 'https' ? 443 : 80);
+        $ip = $safeIps[0] ?? '';
+
+        if ($ip === '' || ! filter_var($ip, FILTER_VALIDATE_IP)) {
+            return [];
+        }
+
+        $address = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)
+            ? '['.$ip.']'
+            : $ip;
+
+        return ["{$host}:{$port}:{$address}"];
     }
 
     private function readBody(Response $response): string
@@ -127,9 +164,6 @@ class UrlContentFetcher
         return "{$scheme}://{$host}{$port}{$path}";
     }
 
-    /**
-     * @param  array<string, mixed>  $context
-     */
     private function logFetch(string $url, float $startedAt, ?int $status = null, ?int $bytes = null, ?string $error = null): void
     {
         Log::info('URL content fetched', [

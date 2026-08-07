@@ -53,16 +53,20 @@
 
 ## Wave 3 — P1: Security Hardening
 
-- [ ] **Rate-limit or throttle registration** to prevent unlimited account creation and scan-quota bypass.
-  - File: `resources/views/livewire/auth/register.blade.php` / `routes/web.php`.
-- [ ] **Re-enable email verification** (`MustVerifyEmail`) if the app is not strictly invite-only.
-  - File: `app/Models/User.php`.
-- [ ] **Restrict `trustProxies` in production** to the actual Traefik/Coolify IP ranges instead of `*`.
+- [x] **Rate-limit or throttle registration** to prevent unlimited account creation and scan-quota bypass.
+  - `auth.register` now rate-limits by IP to 3 registrations per hour using `RateLimiter`.
+  - File: `resources/views/livewire/auth/register.blade.php`.
+- [x] **Re-enable email verification** (`MustVerifyEmail`) since the app is not invite-only.
+  - `User` now implements `MustVerifyEmail`; added `verification.notice`, `verification.verify`, and `verification.send` routes and a notice view.
+  - `Registered` event triggers `SendEmailVerificationNotification`; protected routes now require `verified` middleware.
+  - Files: `app/Models/User.php`, `app/Providers/AppServiceProvider.php`, `routes/web.php`, `resources/views/livewire/auth/verify-email.blade.php`.
+- [x] **Restrict `trustProxies` in production** to the actual proxy CIDRs instead of `*`.
+  - `bootstrap/app.php` reads `TRUSTED_PROXIES` from `.env` (defaults to `*` only when unset) and trusts only `X-Forwarded-For/Port/Proto` — `X-Forwarded-Host` is deliberately excluded to prevent host-header spoofing of generated URLs.
   - File: `bootstrap/app.php` / production `.env`.
-- [ ] **Add production safety notes to `.env.example`** for `APP_DEBUG=false`, `SESSION_SECURE_COOKIE=true`, and `SESSION_ENCRYPT=true`.
-- [ ] **Harden SSRF protection against DNS rebinding** (defence-in-depth).
-  - Pin the resolved IP and connect to it directly with a `Host` header, or use `CURLOPT_RESOLVE`.
-  - File: `app/Extraction/Support/UrlSafetyValidator.php`.
+- [x] **Add production safety notes to `.env.example`** for `APP_DEBUG=false`, `SESSION_SECURE_COOKIE=true`, and `SESSION_ENCRYPT=true`.
+- [x] **Harden SSRF protection against DNS rebinding** (defence-in-depth).
+  - `UrlSafetyValidator::ensureSafe()` now returns the validated public IPs; `UrlContentFetcher` pins the hostname to the first safe IP via `CURLOPT_RESOLVE` so the connection cannot be redirected by a later DNS response.
+  - File: `app/Extraction/Support/UrlSafetyValidator.php`, `app/Extraction/Support/UrlContentFetcher.php`.
 
 ---
 

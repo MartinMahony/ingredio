@@ -11,9 +11,13 @@ use App\Extraction\Exceptions\RecipeExtractionException;
 class UrlSafetyValidator
 {
     /**
+     * Validate the URL and return the safe, public IPs it resolves to.
+     *
+     * @return array<int, string>
+     *
      * @throws RecipeExtractionException
      */
-    public static function ensureSafe(string $url): void
+    public static function ensureSafe(string $url): array
     {
         $parts = parse_url($url);
 
@@ -29,28 +33,33 @@ class UrlSafetyValidator
 
         $host = $parts['host'];
 
-        if (! self::hostResolvesToPublicIps($host)) {
+        $ips = self::safeIpsForHost($host);
+
+        if ($ips === []) {
             throw RecipeExtractionException::unsafeUrl('the host does not resolve to a public address.');
         }
+
+        return $ips;
     }
 
-    private static function hostResolvesToPublicIps(string $host): bool
+    /**
+     * @return array<int, string>
+     */
+    private static function safeIpsForHost(string $host): array
     {
         $ips = filter_var($host, FILTER_VALIDATE_IP)
             ? [$host]
             : self::resolve($host);
 
-        if ($ips === []) {
-            return false;
-        }
+        $safe = [];
 
         foreach ($ips as $ip) {
-            if (! filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
-                return false;
+            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                $safe[] = $ip;
             }
         }
 
-        return true;
+        return array_values(array_unique($safe));
     }
 
     /**

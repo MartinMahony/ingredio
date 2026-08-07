@@ -5,6 +5,8 @@ use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
 
 layout('layouts.auth');
 
@@ -24,15 +26,27 @@ rules([
 $register = function () {
     $validated = $this->validate();
 
+    $key = 'register:'.(request()->ip() ?? 'unknown');
+
+    if (RateLimiter::tooManyAttempts($key, 3)) {
+        $seconds = RateLimiter::availableIn($key);
+
+        throw ValidationException::withMessages([
+            'email' => 'Too many registration attempts. Please try again in '.$seconds.' seconds.',
+        ]);
+    }
+
     $validated['password'] = Hash::make($validated['password']);
 
     $user = User::create($validated);
 
     event(new Registered($user));
 
+    RateLimiter::hit($key, 3600);
+
     Auth::login($user);
 
-    $this->redirect(route('dashboard'), navigate: true);
+    $this->redirect(route('verification.notice'), navigate: true);
 };
 
 ?>

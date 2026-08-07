@@ -6,6 +6,9 @@ use App\Extraction\Contracts\RecipeExtractor;
 use App\Extraction\Drivers\GeminiRecipeExtractor;
 use App\Extraction\Support\ScanRateLimiter;
 use App\Extraction\Support\UrlContentFetcher;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -50,6 +53,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Event::listen(Registered::class, SendEmailVerificationNotification::class);
     }
 }

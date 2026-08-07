@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
@@ -17,7 +18,32 @@ Route::middleware('guest')->group(function () {
     Volt::route('reset-password/{token}', 'auth.reset-password')->name('password.reset');
 });
 
-Route::middleware('auth')->group(function () {
+Route::get('/email/verify', function () {
+    return view('livewire.auth.verify-email');
+})->middleware('auth')->name('verification.notice');
+
+Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+    $request->fulfill();
+
+    return redirect()->route('dashboard');
+})->middleware(['auth', 'signed', 'throttle:6,1'])->name('verification.verify');
+
+Route::post('/email/verification-notification', function () {
+    request()->user()->sendEmailVerificationNotification();
+
+    return back()->with('status', 'verification-link-sent');
+})->middleware(['auth', 'throttle:6,1'])->name('verification.send');
+
+Route::post('logout', function () {
+    Auth::guard('web')->logout();
+
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+
+    return redirect()->route('login');
+})->middleware('auth')->name('logout');
+
+Route::middleware(['auth', 'verified'])->group(function () {
     Volt::route('dashboard', 'dashboard')->name('dashboard');
     Volt::route('settings/profile', 'settings.profile')->name('profile');
 
@@ -30,13 +56,4 @@ Route::middleware('auth')->group(function () {
 
     Volt::route('collections', 'collections.index')->name('collections.index');
     Volt::route('collections/{collection}', 'collections.show')->name('collections.show');
-
-    Route::post('logout', function () {
-        Auth::guard('web')->logout();
-
-        request()->session()->invalidate();
-        request()->session()->regenerateToken();
-
-        return redirect()->route('login');
-    })->name('logout');
 });
