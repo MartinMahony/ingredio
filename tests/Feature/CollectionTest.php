@@ -110,6 +110,20 @@ test('a user can delete their own collection', function () {
     $this->assertDatabaseMissing('collections', ['id' => $collection->id]);
 });
 
+test('collection recipes are ordered by attach time, newest first', function () {
+    $user = User::factory()->create();
+    $collection = Collection::factory()->for($user)->create();
+    $first = Recipe::factory()->for($user)->create();
+    $second = Recipe::factory()->for($user)->create();
+    $third = Recipe::factory()->for($user)->create();
+
+    $collection->recipes()->attach($first, ['created_at' => now()->subMinutes(10), 'updated_at' => now()->subMinutes(10)]);
+    $collection->recipes()->attach($second, ['created_at' => now()->subMinutes(5), 'updated_at' => now()->subMinutes(5)]);
+    $collection->recipes()->attach($third, ['created_at' => now(), 'updated_at' => now()]);
+
+    expect($collection->fresh()->recipes->pluck('id')->all())->toBe([$third->id, $second->id, $first->id]);
+});
+
 test('deleting a collection does not delete its recipes', function () {
     $user = User::factory()->create();
     $collection = Collection::factory()->for($user)->create();

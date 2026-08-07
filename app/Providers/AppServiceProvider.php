@@ -22,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
                     model: (string) config('scanning.model'),
                     baseUrl: (string) config('scanning.gemini.base_url'),
                     timeout: (int) config('scanning.gemini.timeout'),
+                    maxOutputTokens: (int) config('scanning.gemini.max_output_tokens'),
                 ),
             };
         });
@@ -29,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(UrlContentFetcher::class, function (): UrlContentFetcher {
             return new UrlContentFetcher(
                 timeout: (int) config('scanning.url.timeout'),
+                connectTimeout: (int) config('scanning.url.connect_timeout'),
                 maxBytes: (int) config('scanning.url.max_bytes'),
                 maxRedirects: (int) config('scanning.url.max_redirects'),
                 userAgent: (string) config('scanning.url.user_agent'),

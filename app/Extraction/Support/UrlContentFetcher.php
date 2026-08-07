@@ -4,7 +4,9 @@ namespace App\Extraction\Support;
 
 use App\Extraction\Exceptions\RecipeExtractionException;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Fetches a user-supplied URL and returns cleaned, readable page text,
@@ -14,6 +16,7 @@ class UrlContentFetcher
 {
     public function __construct(
         private readonly int $timeout,
+        private readonly int $connectTimeout,
         private readonly int $maxBytes,
         private readonly int $maxRedirects,
         private readonly string $userAgent,
@@ -38,12 +41,16 @@ class UrlContentFetcher
     {
         UrlSafetyValidator::ensureSafe($url);
 
+        $startedAt = microtime(true);
+
         try {
             $response = Http::withHeaders(['User-Agent' => $this->userAgent])
+                ->connectTimeout($this->connectTimeout)
                 ->timeout($this->timeout)
-                ->withOptions(['allow_redirects' => false])
+                ->withOptions(['allow_redirects' => false, 'stream' => true])
                 ->get($url);
         } catch (ConnectionException $e) {
+            $this->logFetch($url, $startedAt, error: $e->getMessage());
             throw RecipeExtractionException::urlFetchFailed($e->getMessage());
         }
 
@@ -58,6 +65,7 @@ class UrlContentFetcher
         }
 
         if ($response->failed()) {
+            $this->logFetch($url, $startedAt, status: $response->status());
             throw RecipeExtractionException::urlFetchFailed('HTTP '.$response->status());
         }
 
@@ -67,13 +75,38 @@ class UrlContentFetcher
             throw RecipeExtractionException::unsafeUrl('the page is too large.');
         }
 
-        $body = $response->body();
+        $body = $this->readBody($response);
 
-        if (strlen($body) > $this->maxBytes) {
-            throw RecipeExtractionException::unsafeUrl('the page is too large.');
-        }
+        $this->logFetch($url, $startedAt, status: $response->status(), bytes: strlen($body));
 
         return $body;
+    }
+
+    private function readBody(Response $response): string
+    {
+        $stream = $response->toPsrResponse()->getBody();
+        $buffer = '';
+        $read = 0;
+
+        while (! $stream->eof()) {
+            $chunk = $stream->read(min(8192, $this->maxBytes + 1 - $read));
+
+            if ($chunk === false || $chunk === '') {
+                break;
+            }
+
+            $buffer .= $chunk;
+            $read += strlen($chunk);
+
+            if ($read > $this->maxBytes) {
+                $stream->close();
+                throw RecipeExtractionException::unsafeUrl('the page is too large.');
+            }
+        }
+
+        $stream->close();
+
+        return $buffer;
     }
 
     private function resolveRedirect(string $base, string $location): string
@@ -92,5 +125,19 @@ class UrlContentFetcher
             : rtrim(dirname($baseParts['path'] ?? '/'), '/').'/'.$location;
 
         return "{$scheme}://{$host}{$port}{$path}";
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    private function logFetch(string $url, float $startedAt, ?int $status = null, ?int $bytes = null, ?string $error = null): void
+    {
+        Log::info('URL content fetched', [
+            'url' => $url,
+            'ms' => (int) round((microtime(true) - $startedAt) * 1000),
+            'status' => $status,
+            'bytes' => $bytes,
+            'error' => $error,
+        ]);
     }
 }

@@ -281,9 +281,12 @@ sharing the droplet with other apps. Decisions made together:
       3. Post-deployment command: `php artisan migrate --force` (add
          `config:cache`/`route:cache`/`view:cache` once env is stable).
       4. A **second** Coolify resource on the same repo/image, with the start
-         command overridden to `php artisan queue:work --tries=3 --backoff=10`
+         command overridden to `php artisan queue:work --tries=3 --backoff=10 --timeout=120 --sleep=1`
          — Laravel's queue worker needs its own long-running process,
-         separate from the web resource.
+         separate from the web resource. The `--timeout=120` must be larger than
+         `ProcessRecipeScan`'s 90 s job timeout. Set `DB_QUEUE_RETRY_AFTER=180`
+         (or `REDIS_QUEUE_RETRY_AFTER=180` if using Redis) to be larger than the
+         worker timeout. Use `--sleep=1` for the DB driver to reduce pickup latency.
       5. Point Coolify's health check at `/up` (Laravel's built-in health
          route, already present).
       6. Attach a domain/subdomain — Coolify/Traefik handles TLS automatically.

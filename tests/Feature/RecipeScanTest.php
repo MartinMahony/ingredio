@@ -268,7 +268,8 @@ it('driver parses a Gemini response into an ExtractedRecipe', function () {
 
     Http::assertSent(function ($request) {
         return $request->hasHeader('x-goog-api-key', 'test-key')
-            && str_contains($request->url(), 'models/gemini-2.0-flash:generateContent');
+            && str_contains($request->url(), 'models/gemini-2.0-flash:generateContent')
+            && data_get($request->data(), 'generationConfig.maxOutputTokens') === 2048;
     });
 });
 

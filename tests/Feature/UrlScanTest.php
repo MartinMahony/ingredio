@@ -49,9 +49,9 @@ function sampleUrlRecipePayload(): array
     ];
 }
 
-function urlFetcher(): UrlContentFetcher
+function urlFetcher(int $maxBytes = 1_000_000): UrlContentFetcher
 {
-    return new UrlContentFetcher(timeout: 5, maxBytes: 1_000_000, maxRedirects: 3, userAgent: 'TestBot/1.0');
+    return new UrlContentFetcher(timeout: 5, connectTimeout: 2, maxBytes: $maxBytes, maxRedirects: 3, userAgent: 'TestBot/1.0');
 }
 
 describe('UrlSafetyValidator', function () {
@@ -144,6 +144,14 @@ describe('UrlContentFetcher', function () {
         ]);
 
         urlFetcher()->fetch('http://1.1.1.1/recipe');
+    })->throws(RecipeExtractionException::class);
+
+    it('rejects bodies without content-length that exceed the limit', function () {
+        Http::fake([
+            '*' => Http::response(str_repeat('a', 100), 200),
+        ]);
+
+        urlFetcher(maxBytes: 50)->fetch('http://1.1.1.1/recipe');
     })->throws(RecipeExtractionException::class);
 
     it('rejects pages with no readable text', function () {

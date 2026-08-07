@@ -11,7 +11,8 @@
 ### Performance / reliability
 - [x] **Add a worker-safe `timeout` to `ProcessRecipeScan`** and make `retry_after` exceed it.
   - Added `public int $timeout = 90;` to the job.
-  - Set `DB_QUEUE_RETRY_AFTER=120` / `REDIS_QUEUE_RETRY_AFTER=120` defaults in `config/queue.php` and `.env.example`.
+  - Set `DB_QUEUE_RETRY_AFTER=180` / `REDIS_QUEUE_RETRY_AFTER=180` defaults in `config/queue.php` and `.env.example`.
+  - Updated `scope.md` queue-worker command to `php artisan queue:work --tries=3 --backoff=10 --timeout=120 --sleep=1` (use `--sleep=1` with the DB driver to reduce pickup latency).
 - [x] **Add the missing composite database indexes** for the common query patterns.
   - Migration `2026_08_07_175109_add_composite_indexes_for_dashboard_and_relations.php` adds indexes on `recipes`, `ingredients`, `recipe_steps`, `recipe_tag`, and `recipe_scans`.
 - [x] **Lower and/or visibility-gate the scan-status polling interval**.
@@ -29,21 +30,23 @@
 
 > Goal: shrink the 9–12 s scan time, which is dominated by the synchronous Gemini round-trip plus inline base64 payload upload.
 
-- [ ] **Cap the extracted URL text length before it reaches the LLM**.
-  - Truncate `HtmlTextExtractor` output or the `ScanSource` text payload to e.g. 20 000 characters.
-  - File: `app/Extraction/Support/UrlContentFetcher.php` / `app/Extraction/Data/ScanSource.php`.
-- [ ] **Stream/abort large URL fetches**.
-  - Avoid loading the whole response into memory when `Content-Length` is absent; abort once `max_bytes` is exceeded.
+- [x] **Cap the extracted URL text length before it reaches the LLM**.
+  - `ScanSource::fromText()` now truncates text to 20 000 characters (`…`).
+  - File: `app/Extraction/Data/ScanSource.php`.
+- [x] **Stream/abort large URL fetches**.
+  - `UrlContentFetcher::readBody()` streams the response and aborts as soon as `max_bytes` is exceeded, without loading the whole body first.
   - File: `app/Extraction/Support/UrlContentFetcher.php`.
-- [ ] **Set a `connect_timeout` separate from the total `timeout`** on the URL fetch call.
+- [x] **Set a `connect_timeout` separate from the total `timeout`** on the URL fetch call.
+  - Added `connect_timeout` to `UrlContentFetcher`, `config/scanning.php`, `.env.example` (`SCAN_URL_CONNECT_TIMEOUT=5`).
   - File: `app/Extraction/Support/UrlContentFetcher.php`.
-- [ ] **Add `max_output_tokens` to the Gemini payload** to cap runaway responses.
+- [x] **Add `max_output_tokens` to the Gemini payload** to cap runaway responses.
+  - `GeminiRecipeExtractor` now sends `maxOutputTokens` (default 2048) from `config/scanning.gemini.max_output_tokens` / `GEMINI_MAX_OUTPUT_TOKENS`.
   - File: `app/Extraction/Drivers/GeminiRecipeExtractor.php`.
-- [ ] **Add timing logs around the LLM call and URL fetch** so future optimisation is data-driven.
-  - Files: `GeminiRecipeExtractor.php`, `UrlContentFetcher.php`.
-- [ ] **Use `queue:work` instead of `queue:listen` in local dev** with `--sleep=1` to remove the 3 s queue-pickup delay.
+- [x] **Add timing logs around the LLM call and URL fetch** so future optimisation is data-driven.
+  - Files: `app/Extraction/Drivers/GeminiRecipeExtractor.php`, `app/Extraction/Support/UrlContentFetcher.php`.
+- [x] **Use `queue:work` instead of `queue:listen` in local dev** with `--sleep=1` to remove the 3 s queue-pickup delay.
   - File: `composer.json`.
-- [ ] **Fix `Collection::recipes()` ordering** to use the pivot `created_at` or remove the join/sort if order is not critical.
+- [x] **Fix `Collection::recipes()` ordering** to use the pivot `created_at`.
   - File: `app/Models/Collection.php`.
 
 ---

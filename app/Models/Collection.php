@@ -32,6 +32,9 @@ class Collection extends Model
      */
     public function recipes(): BelongsToMany
     {
-        return $this->belongsToMany(Recipe::class)->latest('recipes.created_at');
+        return $this->belongsToMany(Recipe::class)
+            ->withTimestamps()
+            ->orderByPivotDesc('created_at')
+            ->orderByPivotDesc('id');
     }
 }

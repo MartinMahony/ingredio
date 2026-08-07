@@ -8,6 +8,7 @@ use App\Extraction\Data\ScanSource;
 use App\Extraction\Exceptions\RecipeExtractionException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class GeminiRecipeExtractor implements RecipeExtractor
 {
@@ -16,6 +17,7 @@ class GeminiRecipeExtractor implements RecipeExtractor
         private readonly string $model,
         private readonly string $baseUrl,
         private readonly int $timeout,
+        private readonly int $maxOutputTokens = 2048,
     ) {}
 
     public function extract(ScanSource $source): ExtractedRecipe
@@ -26,14 +28,19 @@ class GeminiRecipeExtractor implements RecipeExtractor
 
         $endpoint = sprintf('%s/models/%s:generateContent', rtrim($this->baseUrl, '/'), $this->model);
 
+        $startedAt = microtime(true);
+
         try {
             $response = Http::timeout($this->timeout)
                 ->withHeaders(['x-goog-api-key' => $this->apiKey])
                 ->acceptJson()
                 ->post($endpoint, $this->payload($source));
         } catch (ConnectionException $e) {
+            $this->logExtraction($startedAt, error: $e->getMessage());
             throw RecipeExtractionException::requestFailed($e->getMessage());
         }
+
+        $this->logExtraction($startedAt, status: $response->status());
 
         if ($response->failed()) {
             throw RecipeExtractionException::requestFailed('HTTP '.$response->status().' '.$response->body());
@@ -63,6 +70,7 @@ class GeminiRecipeExtractor implements RecipeExtractor
                 'responseMimeType' => 'application/json',
                 'responseSchema' => $this->schema(),
                 'temperature' => 0.1,
+                'maxOutputTokens' => $this->maxOutputTokens,
             ],
         ];
     }
@@ -173,5 +181,15 @@ class GeminiRecipeExtractor implements RecipeExtractor
             ],
             'required' => ['title', 'ingredients', 'steps'],
         ];
+    }
+
+    private function logExtraction(float $startedAt, ?int $status = null, ?string $error = null): void
+    {
+        Log::info('Gemini extraction completed', [
+            'ms' => (int) round((microtime(true) - $startedAt) * 1000),
+            'model' => $this->model,
+            'status' => $status,
+            'error' => $error,
+        ]);
     }
 }
