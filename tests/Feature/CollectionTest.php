@@ -110,6 +110,38 @@ test('a user can delete their own collection', function () {
     $this->assertDatabaseMissing('collections', ['id' => $collection->id]);
 });
 
+test('a user can edit their collection from the index', function () {
+    $user = User::factory()->create();
+    $collection = Collection::factory()->for($user)->create(['name' => 'Favourites']);
+
+    $this->actingAs($user);
+
+    Volt::test('collections.index')
+        ->call('edit', $collection->id)
+        ->set('editingName', 'Faves')
+        ->set('editingDescription', 'Best ones')
+        ->call('update', $collection->id)
+        ->assertHasNoErrors();
+
+    expect($collection->fresh())
+        ->name->toBe('Faves')
+        ->description->toBe('Best ones');
+});
+
+test('a user cannot edit a collection to a duplicate name', function () {
+    $user = User::factory()->create();
+    Collection::factory()->for($user)->create(['name' => 'Taken']);
+    $collection = Collection::factory()->for($user)->create(['name' => 'Mine']);
+
+    $this->actingAs($user);
+
+    Volt::test('collections.index')
+        ->call('edit', $collection->id)
+        ->set('editingName', 'Taken')
+        ->call('update', $collection->id)
+        ->assertHasErrors('editingName');
+});
+
 test('collection recipes are ordered by attach time, newest first', function () {
     $user = User::factory()->create();
     $collection = Collection::factory()->for($user)->create();

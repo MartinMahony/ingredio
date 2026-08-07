@@ -4,7 +4,7 @@ use function Livewire\Volt\{state, computed};
 use App\Models\Recipe;
 use Illuminate\Support\Facades\Gate;
 
-state(['search' => '', 'cuisine' => '', 'tag' => '']);
+state(['search' => '', 'cuisine' => '', 'tag' => '', 'sort' => ''])->url(except: '');
 
 $recipes = computed(function () {
     return auth()->user()
@@ -16,7 +16,11 @@ $recipes = computed(function () {
         }))
         ->when($this->cuisine !== '', fn ($query) => $query->where('cuisine', $this->cuisine))
         ->when($this->tag !== '', fn ($query) => $query->whereHas('tags', fn ($query) => $query->where('tags.id', $this->tag)))
-        ->latest()
+        ->when(true, fn ($query) => match ($this->sort) {
+            'oldest' => $query->oldest(),
+            'title_asc' => $query->orderBy('title'),
+            default => $query->latest(),
+        })
         ->get();
 });
 
@@ -34,6 +38,7 @@ $clearFilters = function () {
     $this->search = '';
     $this->cuisine = '';
     $this->tag = '';
+    $this->sort = '';
 };
 
 $delete = function (Recipe $recipe) {
@@ -116,7 +121,14 @@ $delete = function (Recipe $recipe) {
                 </select>
             @endif
 
-            @if ($search !== '' || $cuisine !== '' || $tag !== '')
+            <select wire:model.live="sort" aria-label="Sort recipes"
+                class="rounded-md border-gray-300 text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900">
+                <option value="">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="title_asc">Title A&ndash;Z</option>
+            </select>
+
+            @if ($search !== '' || $cuisine !== '' || $tag !== '' || $sort !== '')
                 <button type="button" wire:click="clearFilters"
                     class="text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
                     Clear filters
@@ -157,13 +169,15 @@ $delete = function (Recipe $recipe) {
                             @if ($recipe->total_minutes)
                                 <span>{{ $recipe->total_minutes }} min</span>
                             @endif
-                            <span>{{ $recipe->ingredients_count }} ingredients</span>
+                            <span>{{ $recipe->ingredients_count }} {{ Str::plural('ingredient', $recipe->ingredients_count) }}</span>
+                            <span>{{ $recipe->steps_count }} {{ Str::plural('step', $recipe->steps_count) }}</span>
                         </div>
                     </a>
 
                     <button type="button" wire:click="delete({{ $recipe->id }})"
                         wire:confirm="Delete this recipe? This cannot be undone."
-                        class="absolute right-3 top-3 rounded-md p-1 text-gray-400 opacity-0 transition hover:bg-red-50 hover:text-red-600 focus:opacity-100 group-hover:opacity-100 dark:hover:bg-red-900/30"
+                        wire:loading.attr="disabled" wire:target="delete"
+                        class="absolute right-3 top-3 rounded-md p-1 text-gray-400 opacity-0 transition hover:bg-red-50 hover:text-red-600 focus:opacity-100 group-hover:opacity-100 disabled:opacity-75 dark:hover:bg-red-900/30"
                         title="Delete recipe" aria-label="Delete {{ $recipe->title }}">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
                             aria-hidden="true">

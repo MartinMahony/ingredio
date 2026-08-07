@@ -81,9 +81,10 @@ $login = function () {
                 class="text-sm text-orange-600 hover:underline">Forgot password?</a>
         </div>
 
-        <button type="submit"
-            class="w-full rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
-            Log in
+        <button type="submit" wire:loading.attr="disabled" wire:target="login"
+            class="w-full rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-75 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
+            <span wire:loading.remove wire:target="login">Log in</span>
+            <span wire:loading wire:target="login">Logging in&hellip;</span>
         </button>
     </form>
 

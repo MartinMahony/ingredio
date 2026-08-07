@@ -5,7 +5,7 @@ use App\Models\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
-state(['name' => '', 'description' => '']);
+state(['name' => '', 'description' => '', 'editingCollectionId' => null, 'editingName' => '', 'editingDescription' => '']);
 
 $collections = computed(function () {
     return auth()->user()
@@ -30,6 +30,35 @@ $create = function () {
 
     $this->reset('name', 'description');
     unset($this->collections);
+};
+
+$edit = function (Collection $collection) {
+    Gate::authorize('update', $collection);
+
+    $this->editingCollectionId = $collection->id;
+    $this->editingName = $collection->name;
+    $this->editingDescription = (string) $collection->description;
+};
+
+$update = function (Collection $collection) {
+    Gate::authorize('update', $collection);
+
+    $this->validate([
+        'editingName' => ['required', 'string', 'max:100', Rule::unique('collections', 'name')->where('user_id', auth()->id())->ignore($collection->id)],
+        'editingDescription' => ['nullable', 'string', 'max:500'],
+    ]);
+
+    $collection->update([
+        'name' => $this->editingName,
+        'description' => $this->editingDescription ?: null,
+    ]);
+
+    $this->reset('editingCollectionId', 'editingName', 'editingDescription');
+    unset($this->collections);
+};
+
+$cancelEdit = function () {
+    $this->reset('editingCollectionId', 'editingName', 'editingDescription');
 };
 
 $delete = function (Collection $collection) {
@@ -65,9 +94,10 @@ $delete = function (Collection $collection) {
             <input wire:model="description" id="description" type="text"
                 class="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-800">
         </div>
-        <button type="submit"
-            class="rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700">
-            New collection
+        <button type="submit" wire:loading.attr="disabled" wire:target="create"
+            class="rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-75">
+            <span wire:loading.remove wire:target="create">New collection</span>
+            <span wire:loading wire:target="create">Creating&hellip;</span>
         </button>
     </form>
 
@@ -84,28 +114,65 @@ $delete = function (Collection $collection) {
             @foreach ($this->collections as $collection)
                 <div wire:key="collection-{{ $collection->id }}"
                     class="group relative flex flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
-                    <a href="{{ route('collections.show', $collection) }}" wire:navigate class="flex-1">
-                        <h2 class="pr-6 text-base font-semibold group-hover:text-orange-600">{{ $collection->name }}</h2>
-                        @if ($collection->description)
-                            <p class="mt-1 line-clamp-2 text-sm text-gray-500 dark:text-gray-400">
-                                {{ $collection->description }}
+                    @if ($editingCollectionId === $collection->id)
+                        <form wire:submit="update({{ $collection->id }})" class="flex flex-1 flex-col gap-2">
+                            <input wire:model="editingName" type="text" aria-label="Collection name"
+                                class="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-800">
+                            @error('editingName')
+                                <p class="text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                            <input wire:model="editingDescription" type="text" placeholder="Description (optional)"
+                                aria-label="Collection description"
+                                class="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-800">
+                            <div class="mt-2 flex items-center gap-2">
+                                <button type="submit" wire:loading.attr="disabled" wire:target="update"
+                                    class="rounded-md bg-orange-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-orange-700 disabled:opacity-75">
+                                    <span wire:loading.remove wire:target="update">Save</span>
+                                    <span wire:loading wire:target="update">Saving&hellip;</span>
+                                </button>
+                                <button type="button" wire:click="cancelEdit"
+                                    class="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    @else
+                        <a href="{{ route('collections.show', $collection) }}" wire:navigate class="flex-1">
+                            <h2 class="pr-12 text-base font-semibold group-hover:text-orange-600">{{ $collection->name }}</h2>
+                            @if ($collection->description)
+                                <p class="mt-1 line-clamp-2 text-sm text-gray-500 dark:text-gray-400">
+                                    {{ $collection->description }}
+                                </p>
+                            @endif
+                            <p class="mt-4 text-xs text-gray-500 dark:text-gray-400">
+                                {{ $collection->recipes_count }} {{ Str::plural('recipe', $collection->recipes_count) }}
                             </p>
-                        @endif
-                        <p class="mt-4 text-xs text-gray-500 dark:text-gray-400">
-                            {{ $collection->recipes_count }} {{ Str::plural('recipe', $collection->recipes_count) }}
-                        </p>
-                    </a>
+                        </a>
 
-                    <button type="button" wire:click="delete({{ $collection->id }})"
-                        wire:confirm="Delete this collection? Recipes inside it will not be deleted."
-                        class="absolute right-3 top-3 rounded-md p-1 text-gray-400 opacity-0 transition hover:bg-red-50 hover:text-red-600 focus:opacity-100 group-hover:opacity-100 dark:hover:bg-red-900/30"
-                        title="Delete collection" aria-label="Delete {{ $collection->name }}">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                            aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                        </svg>
-                    </button>
+                        <div class="absolute right-3 top-3 flex items-center gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+                            <button type="button" wire:click="edit({{ $collection->id }})"
+                                class="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+                                title="Edit collection" aria-label="Edit {{ $collection->name }}">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                    aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.25a4.5 4.5 0 01-1.897 1.13l-2.681.8.8-2.681a4.5 4.5 0 011.13-1.897L16.862 4.487z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 7.5h.008v.008H19.5V7.5z" />
+                                </svg>
+                            </button>
+                            <button type="button" wire:click="delete({{ $collection->id }})"
+                                wire:loading.attr="disabled" wire:target="delete"
+                                wire:confirm="Delete this collection? Recipes inside it will not be deleted."
+                                class="rounded-md p-1 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-75 dark:hover:bg-red-900/30"
+                                title="Delete collection" aria-label="Delete {{ $collection->name }}">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                    aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                </svg>
+                            </button>
+                        </div>
+                    @endif
                 </div>
             @endforeach
         </div>

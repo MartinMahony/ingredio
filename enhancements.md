@@ -72,20 +72,29 @@
 
 ## Wave 4 — P2: Usability & Polish
 
-- [ ] **Add a dashboard sort control** (newest / oldest / title A–Z).
+- [x] **Add a dashboard sort control** (newest / oldest / title A–Z).
+  - Added a `sort` selector and URL-synced `search`, `cuisine`, `tag`, and `sort` query params.
   - File: `resources/views/livewire/dashboard.blade.php`.
-- [ ] **Add a "Duplicate recipe" action** on `recipes.show`.
-  - Reuse the `recipes.manage` form prefilled from an existing recipe, or `replicate()` + relations copy.
-- [ ] **Add cooking-mode checklists** on `recipes.show`.
-  - Pure Alpine client-side state to tick off ingredients/steps while cooking.
-- [ ] **Standardise `wire:loading` states** on all mutating buttons (save, create collection, share controls, etc.).
-- [ ] **Dirty-check the recipe form before the "Cancel" link navigates away**.
-- [ ] **Make tag and cuisine pills clickable** — link back to the dashboard filtered by that tag/cuisine.
-- [ ] **Add collection rename/edit** (the `CollectionPolicy::update` exists but no UI uses it).
-  - File: `resources/views/livewire/collections/index.blade.php`.
-- [ ] **Eager-load relations in `recipes.manage` mount** to avoid three lazy queries on edit.
+- [x] **Add a "Duplicate recipe" action** on `recipes.show`.
+  - Uses `replicate()` and copies ingredients, steps, and tags, then redirects to the copy for editing.
+  - File: `resources/views/livewire/recipes/show.blade.php`.
+- [x] **Add cooking-mode checklists** on `recipes.show`.
+  - "Cook mode" toggle shows checkboxes for ingredients and steps and tracks checked state purely in Alpine.
+  - File: `resources/views/livewire/recipes/show.blade.php`.
+- [x] **Standardise `wire:loading` states** on all mutating buttons (save, create collection, share controls, etc.).
+  - `wire:loading.attr="disabled"` and loading text added to dashboard, recipe, collection, scan, and auth action buttons.
+- [x] **Dirty-check the recipe form before the "Cancel" link navigates away**.
+  - `recipes.manage` now uses Alpine `dirty` state, `beforeunload` warning, and a confirmation prompt before `Livewire.navigate`.
   - File: `resources/views/livewire/recipes/manage.blade.php`.
-- [ ] **Show `steps_count` on dashboard cards or drop the unused `withCount('steps')`**.
+- [x] **Make tag and cuisine pills clickable** — link back to the dashboard filtered by that tag/cuisine.
+  - File: `resources/views/livewire/recipes/show.blade.php`.
+- [x] **Add collection rename/edit** (the `CollectionPolicy::update` exists but no UI uses it).
+  - Inline edit form on `collections.index` with uniqueness validation scoped to the user.
+  - File: `resources/views/livewire/collections/index.blade.php`.
+- [x] **Eager-load relations in `recipes.manage` mount** to avoid three lazy queries on edit.
+  - File: `resources/views/livewire/recipes/manage.blade.php`.
+- [x] **Show `steps_count` on dashboard cards or drop the unused `withCount('steps')`**.
+  - Dashboard cards now show ingredient and step counts.
   - File: `resources/views/livewire/dashboard.blade.php`.
 
 ---

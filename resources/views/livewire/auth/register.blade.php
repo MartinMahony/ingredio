@@ -90,9 +90,10 @@ $register = function () {
                 class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-800">
         </div>
 
-        <button type="submit"
-            class="w-full rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
-            Create account
+        <button type="submit" wire:loading.attr="disabled" wire:target="register"
+            class="w-full rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-75 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
+            <span wire:loading.remove wire:target="register">Create account</span>
+            <span wire:loading wire:target="register">Creating&hellip;</span>
         </button>
     </form>
 

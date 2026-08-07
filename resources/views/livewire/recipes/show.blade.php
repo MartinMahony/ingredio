@@ -60,9 +60,34 @@ $disableSharing = function () {
     $this->recipe->disableSharing();
 };
 
+$duplicate = function () {
+    Gate::authorize('create', Recipe::class);
+
+    $copy = $this->recipe->replicate()->fill([
+        'title' => 'Copy of '.$this->recipe->title,
+        'share_token' => null,
+        'shared_at' => null,
+    ]);
+    $copy->save();
+
+    foreach ($this->recipe->ingredients as $ingredient) {
+        $copy->ingredients()->create($ingredient->only(['group', 'position', 'quantity', 'unit', 'name', 'note']));
+    }
+
+    foreach ($this->recipe->steps as $step) {
+        $copy->steps()->create($step->only(['position', 'instruction', 'minutes']));
+    }
+
+    if ($this->recipe->tags->isNotEmpty()) {
+        $copy->tags()->attach($this->recipe->tags->pluck('id'));
+    }
+
+    $this->redirect(route('recipes.edit', $copy), navigate: true);
+};
+
 ?>
 
-<div>
+<div x-data="{ cooking: false, checked: [] }">
     <div class="mb-6 flex items-center justify-between print:hidden">
         <a href="{{ route('dashboard') }}" wire:navigate
             class="text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
@@ -74,14 +99,28 @@ $disableSharing = function () {
                 class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
                 Print
             </button>
+            <button type="button" x-on:click="cooking = !cooking"
+                x-text="cooking ? 'Stop cooking' : 'Cook mode'"
+                class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
+                Cook mode
+            </button>
             <a href="{{ route('recipes.edit', $recipe) }}" wire:navigate
                 class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
                 Edit
             </a>
+            <button type="button" wire:click="duplicate"
+                wire:loading.attr="disabled" wire:target="duplicate"
+                wire:confirm="Duplicate this recipe?"
+                class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
+                <span wire:loading.remove wire:target="duplicate">Duplicate</span>
+                <span wire:loading wire:target="duplicate">Copying&hellip;</span>
+            </button>
             <button type="button" wire:click="delete"
+                wire:loading.attr="disabled" wire:target="delete"
                 wire:confirm="Delete this recipe? This cannot be undone."
                 class="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-900/30">
-                Delete
+                <span wire:loading.remove wire:target="delete">Delete</span>
+                <span wire:loading wire:target="delete">Deleting&hellip;</span>
             </button>
         </div>
     </div>
@@ -122,7 +161,12 @@ $disableSharing = function () {
                 @if ($recipe->cuisine)
                     <div>
                         <dt class="text-gray-500 dark:text-gray-400">Cuisine</dt>
-                        <dd class="font-medium">{{ $recipe->cuisine }}</dd>
+                        <dd class="font-medium">
+                            <a href="{{ route('dashboard', ['cuisine' => $recipe->cuisine]) }}" wire:navigate
+                                class="hover:text-orange-600 hover:underline">
+                                {{ $recipe->cuisine }}
+                            </a>
+                        </dd>
                     </div>
                 @endif
             </dl>
@@ -160,10 +204,10 @@ $disableSharing = function () {
             @if ($recipe->tags->isNotEmpty())
                 <div class="mt-4 flex flex-wrap gap-2">
                     @foreach ($recipe->tags as $tag)
-                        <span
-                            class="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                        <a href="{{ route('dashboard', ['tag' => $tag->id]) }}" wire:navigate
+                            class="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">
                             {{ $tag->name }}
-                        </span>
+                        </a>
                     @endforeach
                 </div>
             @endif
@@ -178,6 +222,7 @@ $disableSharing = function () {
                             class="flex items-center gap-1 rounded-full bg-orange-50 py-1 pl-2.5 pr-1 text-xs font-medium text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
                             {{ $collection->name }}
                             <button type="button" wire:click="removeFromCollection({{ $collection->id }})"
+                                wire:loading.attr="disabled" wire:target="removeFromCollection"
                                 class="rounded-full p-0.5 hover:bg-orange-100 dark:hover:bg-orange-900/60"
                                 title="Remove" aria-label="Remove from {{ $collection->name }}">
                                 &times;
@@ -195,8 +240,10 @@ $disableSharing = function () {
                                 @endforeach
                             </select>
                             <button type="submit"
+                                wire:loading.attr="disabled" wire:target="addToCollection"
                                 class="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
-                                Add
+                                <span wire:loading.remove wire:target="addToCollection">Add</span>
+                                <span wire:loading wire:target="addToCollection">Adding&hellip;</span>
                             </button>
                         </form>
                     @endif
@@ -228,18 +275,24 @@ $disableSharing = function () {
                             <span x-show="copied" x-cloak>Copied!</span>
                         </button>
                         <button type="button" wire:click="enableSharing" wire:confirm="Regenerate the link? The old link will stop working."
+                            wire:loading.attr="disabled" wire:target="enableSharing"
                             class="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
-                            Regenerate
+                            <span wire:loading.remove wire:target="enableSharing">Regenerate</span>
+                            <span wire:loading wire:target="enableSharing">Saving&hellip;</span>
                         </button>
                         <button type="button" wire:click="disableSharing" wire:confirm="Disable the public link? It will stop working immediately."
+                            wire:loading.attr="disabled" wire:target="disableSharing"
                             class="rounded-md border border-red-200 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-900/30">
-                            Disable
+                            <span wire:loading.remove wire:target="disableSharing">Disable</span>
+                            <span wire:loading wire:target="disableSharing">Disabling&hellip;</span>
                         </button>
                     </div>
                 @else
                     <button type="button" wire:click="enableSharing"
+                        wire:loading.attr="disabled" wire:target="enableSharing"
                         class="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
-                        Enable public link
+                        <span wire:loading.remove wire:target="enableSharing">Enable public link</span>
+                        <span wire:loading wire:target="enableSharing">Enabling&hellip;</span>
                     </button>
                 @endif
             </div>
@@ -252,16 +305,23 @@ $disableSharing = function () {
                     <p class="text-sm text-gray-500 dark:text-gray-400">No ingredients listed.</p>
                 @else
                     @php($ingredientGroups = $recipe->ingredients->groupBy('group'))
-                    <div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-4 text-sm">
+                    <div class="space-y-4 text-sm">
                         @foreach ($ingredientGroups as $group => $items)
                             @if ($group)
-                                <h3 class="col-span-2 text-sm font-medium text-gray-500 dark:text-gray-400">{{ $group }}</h3>
+                                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ $group }}</h3>
                             @endif
-                            <ul class="col-span-2 grid grid-cols-subgrid gap-y-1.5">
+                            <ul class="space-y-1.5">
                                 @foreach ($items as $ingredient)
-                                    <li class="col-span-2 grid grid-cols-subgrid">
-                                        <span class="whitespace-nowrap font-medium">{{ trim($ingredient->quantity . ' ' . $ingredient->unit) }}</span>
-                                        <span>
+                                    <li class="flex items-start gap-3">
+                                        <input type="checkbox" x-show="cooking" x-model="checked"
+                                            value="ingredient-{{ $ingredient->id }}"
+                                            class="mt-0.5 h-4 w-4 flex-none rounded border-gray-300 text-orange-600 focus:ring-orange-600"
+                                            aria-label="Mark {{ $ingredient->name }} as checked">
+                                        <span class="whitespace-nowrap font-medium"
+                                            x-bind:class="{ 'line-through opacity-50': checked.includes('ingredient-{{ $ingredient->id }}') }">
+                                            {{ trim($ingredient->quantity . ' ' . $ingredient->unit) }}
+                                        </span>
+                                        <span x-bind:class="{ 'line-through opacity-50': checked.includes('ingredient-{{ $ingredient->id }}') }">
                                             {{ $ingredient->name }}
                                             @if ($ingredient->note)
                                                 <span class="text-gray-500 dark:text-gray-400">({{ $ingredient->note }})</span>
@@ -282,12 +342,17 @@ $disableSharing = function () {
                 @else
                     <ol class="space-y-4">
                         @foreach ($recipe->steps as $step)
-                            <li class="flex gap-3">
+                            <li class="flex items-start gap-3">
+                                <input type="checkbox" x-show="cooking" x-model="checked" value="step-{{ $step->id }}"
+                                    class="mt-1 h-4 w-4 flex-none rounded border-gray-300 text-orange-600 focus:ring-orange-600"
+                                    aria-label="Mark step {{ $loop->iteration }} as checked">
                                 <span
-                                    class="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-orange-100 text-sm font-medium text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">
+                                    class="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-orange-100 text-sm font-medium text-orange-700 dark:bg-orange-900/40 dark:text-orange-300"
+                                    x-bind:class="{ 'line-through opacity-50': checked.includes('step-{{ $step->id }}') }">
                                     {{ $loop->iteration }}
                                 </span>
-                                <div class="text-sm leading-relaxed">
+                                <div class="text-sm leading-relaxed"
+                                    x-bind:class="{ 'line-through opacity-50': checked.includes('step-{{ $step->id }}') }">
                                     {{ $step->instruction }}
                                     @if ($step->minutes)
                                         <span class="text-gray-500 dark:text-gray-400"> — {{ $step->minutes }} min</span>

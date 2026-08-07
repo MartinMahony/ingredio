@@ -30,6 +30,8 @@ mount(function (?Recipe $recipe = null) {
     if ($recipe && $recipe->exists) {
         Gate::authorize('update', $recipe);
 
+        $recipe->load(['ingredients', 'steps', 'tags']);
+
         $this->recipeId = $recipe->id;
         $this->title = $recipe->title;
         $this->description = (string) $recipe->description;
@@ -190,9 +192,13 @@ $save = function () {
 
 @php($inputClass = 'rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-800')
 
-<div>
+<div x-data="{ dirty: false }" x-on:beforeunload.window="if (dirty) $event.returnValue = ''">
     <div class="mb-6">
-        <a href="{{ $recipeId ? route('recipes.show', $recipeId) : route('dashboard') }}" wire:navigate
+        <a href="{{ $recipeId ? route('recipes.show', $recipeId) : route('dashboard') }}"
+            x-on:click.prevent="
+                if (dirty && ! confirm('You have unsaved changes. Discard them?')) return;
+                Livewire.navigate($el.href);
+            "
             class="text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
             &larr; Cancel
         </a>
@@ -201,7 +207,7 @@ $save = function () {
         </h1>
     </div>
 
-    <form wire:submit="save" class="space-y-8">
+    <form wire:submit="save" x-on:input="dirty = true" class="space-y-8">
         <section class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
             <h2 class="mb-4 text-base font-medium">Details</h2>
 
@@ -309,7 +315,8 @@ $save = function () {
             <div class="mb-4 flex items-center justify-between">
                 <h2 class="text-base font-medium">Ingredients</h2>
                 <button type="button" wire:click="addIngredient"
-                    class="rounded-md border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
+                    wire:loading.attr="disabled" wire:target="addIngredient"
+                    class="rounded-md border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800 disabled:opacity-75">
                     + Add
                 </button>
             </div>
@@ -326,7 +333,8 @@ $save = function () {
                         <input wire:model="ingredients.{{ $index }}.group" type="text" placeholder="Section (optional)"
                             aria-label="Ingredient {{ $index + 1 }} section" class="{{ $inputClass }} sm:w-40">
                         <button type="button" wire:click="removeIngredient({{ $index }})"
-                            class="rounded-md p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
+                            wire:loading.attr="disabled" wire:target="removeIngredient"
+                            class="rounded-md p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-75 dark:hover:bg-red-900/30"
                             title="Remove" aria-label="Remove ingredient {{ $index + 1 }}">
                             &times;
                         </button>
@@ -339,7 +347,8 @@ $save = function () {
             <div class="mb-4 flex items-center justify-between">
                 <h2 class="text-base font-medium">Method</h2>
                 <button type="button" wire:click="addStep"
-                    class="rounded-md border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
+                    wire:loading.attr="disabled" wire:target="addStep"
+                    class="rounded-md border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800 disabled:opacity-75">
                     + Add step
                 </button>
             </div>
@@ -355,7 +364,8 @@ $save = function () {
                         <input wire:model="steps.{{ $index }}.minutes" type="number" min="0" placeholder="Min"
                             aria-label="Step {{ $index + 1 }} minutes" class="{{ $inputClass }} w-20">
                         <button type="button" wire:click="removeStep({{ $index }})"
-                            class="rounded-md p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
+                            wire:loading.attr="disabled" wire:target="removeStep"
+                            class="rounded-md p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-75 dark:hover:bg-red-900/30"
                             title="Remove" aria-label="Remove step {{ $index + 1 }}">
                             &times;
                         </button>
@@ -370,13 +380,18 @@ $save = function () {
         </section>
 
         <div class="flex items-center justify-end gap-3">
-            <a href="{{ $recipeId ? route('recipes.show', $recipeId) : route('dashboard') }}" wire:navigate
+            <a href="{{ $recipeId ? route('recipes.show', $recipeId) : route('dashboard') }}"
+                x-on:click.prevent="
+                    if (dirty && ! confirm('You have unsaved changes. Discard them?')) return;
+                    Livewire.navigate($el.href);
+                "
                 class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
                 Cancel
             </a>
-            <button type="submit"
-                class="rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700">
-                {{ $recipeId ? 'Save changes' : 'Create recipe' }}
+            <button type="submit" wire:loading.attr="disabled" wire:target="save"
+                class="rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-75">
+                <span wire:loading.remove wire:target="save">{{ $recipeId ? 'Save changes' : 'Create recipe' }}</span>
+                <span wire:loading wire:target="save">Saving&hellip;</span>
             </button>
         </div>
     </form>

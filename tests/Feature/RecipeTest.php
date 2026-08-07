@@ -130,6 +130,30 @@ test('a user can delete their recipe from the detail page', function () {
     $this->assertDatabaseMissing('recipes', ['id' => $recipe->id]);
 });
 
+test('a user can duplicate their recipe', function () {
+    $user = User::factory()->create();
+    $recipe = Recipe::factory()->for($user)->create(['title' => 'Pancakes']);
+    $recipe->ingredients()->create(['position' => 0, 'name' => 'Flour']);
+    $recipe->steps()->create(['position' => 0, 'instruction' => 'Mix']);
+    $tag = $user->tags()->create(['name' => 'breakfast']);
+    $recipe->tags()->attach($tag);
+
+    $this->actingAs($user);
+
+    $component = Volt::test('recipes.show', ['recipe' => $recipe])
+        ->call('duplicate');
+
+    $copy = Recipe::latest('id')->first();
+
+    expect($copy->id)->not->toBe($recipe->id)
+        ->and($copy->title)->toBe('Copy of Pancakes')
+        ->and($copy->ingredients)->toHaveCount(1)
+        ->and($copy->steps)->toHaveCount(1)
+        ->and($copy->tags->pluck('id')->all())->toBe([$tag->id]);
+
+    $component->assertRedirect(route('recipes.edit', $copy));
+});
+
 test('a user cannot delete another users recipe from the list', function () {
     $recipe = Recipe::factory()->create();
 
