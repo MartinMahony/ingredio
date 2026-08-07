@@ -152,3 +152,25 @@ test('the dashboard only lists the current users recipes', function () {
         ->assertSee('Mine')
         ->assertDontSee('Theirs');
 });
+
+test('recipe description and notes are limited to 10000 characters', function () {
+    $this->actingAs(User::factory()->create());
+
+    Volt::test('recipes.manage')
+        ->set('title', 'Too Long')
+        ->set('description', str_repeat('a', 10001))
+        ->set('notes', str_repeat('b', 10001))
+        ->call('save')
+        ->assertHasErrors(['description', 'notes']);
+});
+
+test('ingredient and step arrays are limited to 200 entries', function () {
+    $this->actingAs(User::factory()->create());
+
+    Volt::test('recipes.manage')
+        ->set('title', 'Too Many Rows')
+        ->set('ingredients', array_fill(0, 201, ['group' => '', 'quantity' => '', 'unit' => '', 'name' => 'x', 'note' => '']))
+        ->set('steps', array_fill(0, 201, ['instruction' => 'x', 'minutes' => '']))
+        ->call('save')
+        ->assertHasErrors(['ingredients', 'steps']);
+});

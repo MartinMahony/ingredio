@@ -25,7 +25,7 @@ $status = computed(fn () => $this->scan->status);
 
 ?>
 
-<div class="mx-auto max-w-xl" @if (! $this->status->isFinished()) wire:poll.2s="poll" @endif>
+<div class="mx-auto max-w-xl" @if (! $this->status->isFinished()) wire:poll.1s.visible="poll" @endif>
     @if ($this->status === App\Enums\ScanStatus::Failed)
         <div role="alert"
             class="flex flex-col items-center justify-center rounded-xl border border-red-200 bg-red-50 p-10 text-center dark:border-red-900/50 dark:bg-red-900/20">

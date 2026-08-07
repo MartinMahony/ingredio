@@ -99,7 +99,7 @@ $save = function () {
 
     $validated = $this->validate([
         'title' => ['required', 'string', 'max:255'],
-        'description' => ['nullable', 'string'],
+        'description' => ['nullable', 'string', 'max:10000'],
         'servings' => ['nullable', 'string', 'max:50'],
         'prep_minutes' => ['nullable', 'integer', 'min:0', 'max:10000'],
         'cook_minutes' => ['nullable', 'integer', 'min:0', 'max:10000'],
@@ -109,10 +109,10 @@ $save = function () {
         'protein_grams' => ['nullable', 'numeric', 'min:0', 'max:2000'],
         'carbs_grams' => ['nullable', 'numeric', 'min:0', 'max:2000'],
         'fat_grams' => ['nullable', 'numeric', 'min:0', 'max:2000'],
-        'notes' => ['nullable', 'string'],
-        'ingredients' => ['array'],
+        'notes' => ['nullable', 'string', 'max:10000'],
+        'ingredients' => ['array', 'max:200'],
         'ingredients.*.name' => ['nullable', 'string', 'max:255'],
-        'steps' => ['array'],
+        'steps' => ['array', 'max:200'],
         'steps.*.instruction' => ['nullable', 'string', 'max:2000'],
     ]);
 

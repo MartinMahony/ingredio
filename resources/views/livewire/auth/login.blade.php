@@ -2,6 +2,7 @@
 
 use function Livewire\Volt\{state, rules, layout};
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 
 layout('layouts.auth');
@@ -20,11 +21,25 @@ rules([
 $login = function () {
     $this->validate();
 
+    $key = 'login:'.strtolower($this->email).':'.request()->ip();
+
+    if (RateLimiter::tooManyAttempts($key, 5)) {
+        $seconds = RateLimiter::availableIn($key);
+
+        throw ValidationException::withMessages([
+            'email' => 'Too many login attempts. Please try again in '.$seconds.' seconds.',
+        ]);
+    }
+
     if (! Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
+        RateLimiter::hit($key, 60);
+
         throw ValidationException::withMessages([
             'email' => __('auth.failed'),
         ]);
     }
+
+    RateLimiter::clear($key);
 
     session()->regenerate();
 

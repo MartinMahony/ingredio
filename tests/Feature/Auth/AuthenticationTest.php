@@ -38,3 +38,19 @@ test('authenticated users can log out', function () {
 
     $this->assertGuest();
 });
+
+test('login is rate limited after five failed attempts', function () {
+    $user = User::factory()->create();
+
+    $component = Volt::test('auth.login')
+        ->set('email', $user->email)
+        ->set('password', 'wrong-password');
+
+    foreach (range(1, 5) as $_) {
+        $component->call('login')->assertHasErrors('email');
+    }
+
+    $component
+        ->call('login')
+        ->assertHasErrors(['email' => fn ($rules, $messages) => str_contains($messages[0] ?? '', 'Too many login attempts')]);
+});
