@@ -82,7 +82,7 @@ $duplicate = function () {
         $copy->tags()->attach($this->recipe->tags->pluck('id'));
     }
 
-    $this->redirect(route('recipes.edit', $copy), navigate: true);
+    $this->redirect(route('recipes.edit', ['recipe' => $copy, 'saved' => 1]), navigate: true);
 };
 
 $toggleFavorite = function () {

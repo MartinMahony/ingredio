@@ -15,6 +15,29 @@ test('a user can view the create recipe form', function () {
         ->assertSee('New recipe');
 });
 
+test('the edit form shows a saved banner when arriving from a scan or duplicate', function () {
+    $user = User::factory()->create();
+    $recipe = Recipe::factory()->for($user)->create();
+
+    $this->actingAs($user)
+        ->get(route('recipes.edit', ['recipe' => $recipe, 'saved' => 1]))
+        ->assertOk()
+        ->assertSee('Already saved to your recipes')
+        ->assertSee('Back to recipe')
+        ->assertDontSee('Cancel');
+});
+
+test('the edit form shows the normal cancel link when not arriving from a save redirect', function () {
+    $user = User::factory()->create();
+    $recipe = Recipe::factory()->for($user)->create();
+
+    $this->actingAs($user)
+        ->get(route('recipes.edit', $recipe))
+        ->assertOk()
+        ->assertDontSee('Already saved to your recipes')
+        ->assertSee('Cancel');
+});
+
 test('a user can create a recipe with ingredients and steps', function () {
     $user = User::factory()->create();
 
@@ -151,7 +174,7 @@ test('a user can duplicate their recipe', function () {
         ->and($copy->steps)->toHaveCount(1)
         ->and($copy->tags->pluck('id')->all())->toBe([$tag->id]);
 
-    $component->assertRedirect(route('recipes.edit', $copy));
+    $component->assertRedirect(route('recipes.edit', ['recipe' => $copy, 'saved' => 1]));
 });
 
 test('a user cannot delete another users recipe from the list', function () {

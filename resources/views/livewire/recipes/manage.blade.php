@@ -9,6 +9,7 @@ use Illuminate\Validation\Rule;
 
 state([
     'recipeId' => null,
+    'justSaved' => false,
     'title' => '',
     'description' => '',
     'servings' => '',
@@ -37,6 +38,7 @@ mount(function (?Recipe $recipe = null) {
         $recipe->load(['ingredients', 'steps', 'tags']);
 
         $this->recipeId = $recipe->id;
+        $this->justSaved = request()->boolean('saved');
         $this->title = $recipe->title;
         $this->description = (string) $recipe->description;
         $this->servings = (string) $recipe->servings;
@@ -204,11 +206,26 @@ $save = function () {
                 Livewire.navigate($el.href);
             "
             class="text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
-            &larr; Cancel
+            &larr; {{ $justSaved ? 'Back to recipe' : 'Cancel' }}
         </a>
         <h1 class="mt-2 text-2xl font-semibold tracking-tight">
             {{ $recipeId ? 'Edit recipe' : 'New recipe' }}
         </h1>
+
+        @if ($justSaved)
+            <div class="mt-4 flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800 dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-300">
+                <svg class="mt-0.5 h-4 w-4 flex-none" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+                    aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                <p>
+                    Already saved to your recipes. Feel free to review and tidy up the details below, or
+                    <a href="{{ route('recipes.show', $recipeId) }}" wire:navigate class="font-medium underline hover:no-underline">
+                        skip straight to the recipe
+                    </a>.
+                </p>
+            </div>
+        @endif
     </div>
 
     <form wire:submit="save" x-on:input="dirty = true" class="space-y-8">
@@ -395,7 +412,7 @@ $save = function () {
                     Livewire.navigate($el.href);
                 "
                 class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
-                Cancel
+                {{ $justSaved ? 'Done' : 'Cancel' }}
             </a>
             <button type="submit" wire:loading.attr="disabled" wire:target="save"
                 class="rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-75">

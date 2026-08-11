@@ -17,7 +17,7 @@ $poll = function () {
     $this->scan->refresh();
 
     if ($this->scan->status === ScanStatus::Ready && $this->scan->recipe_id) {
-        $this->redirect(route('recipes.edit', $this->scan->recipe_id), navigate: true);
+        $this->redirect(route('recipes.edit', ['recipe' => $this->scan->recipe_id, 'saved' => 1]), navigate: true);
     }
 };
 

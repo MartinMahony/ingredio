@@ -104,7 +104,7 @@ it('redirects to the review screen when the scan is ready', function () {
 
     Volt::test('scans.show', ['scan' => $scan])
         ->call('poll')
-        ->assertRedirect(route('recipes.edit', $recipe));
+        ->assertRedirect(route('recipes.edit', ['recipe' => $recipe, 'saved' => 1]));
 });
 
 it('shows the error when the scan failed', function () {
