@@ -389,6 +389,25 @@ it('driver raises a clear error when the response was truncated by the token lim
     $extractor->extract(ScanSource::fromContents('bytes', 'image/png'));
 })->throws(RecipeExtractionException::class, 'cut off');
 
+it('driver automatically retries with a higher token limit after truncation', function () {
+    Http::fakeSequence()
+        ->push([
+            'candidates' => [[
+                'content' => ['parts' => [['text' => '{"title": "Tomato Soup", "ingredients": [']]],
+                'finishReason' => 'MAX_TOKENS',
+            ]],
+        ])
+        ->push(fakeGeminiResponse(sampleRecipePayload()));
+
+    $extractor = new GeminiRecipeExtractor('test-key', 'gemini-2.0-flash', 'https://example.test/v1beta', 30, 2048);
+
+    $recipe = $extractor->extract(ScanSource::fromContents('bytes', 'image/png'));
+
+    expect($recipe->title)->toBe('Tomato Soup');
+
+    Http::assertSentCount(2);
+});
+
 test('a user can view their scan history', function () {
     $user = User::factory()->create();
     $scan = RecipeScan::factory()->for($user)->create();

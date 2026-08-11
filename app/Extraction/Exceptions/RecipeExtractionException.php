@@ -6,6 +6,8 @@ use RuntimeException;
 
 class RecipeExtractionException extends RuntimeException
 {
+    public bool $truncated = false;
+
     public static function missingApiKey(): self
     {
         return new self('The Gemini API key is not configured.');
@@ -23,7 +25,10 @@ class RecipeExtractionException extends RuntimeException
 
     public static function responseTruncated(): self
     {
-        return new self('Recipe extraction was cut off before it finished (the recipe may be too long). Try again or use a shorter source.');
+        $exception = new self('Recipe extraction was cut off before it finished (the recipe may be too long). Try again or use a shorter source.');
+        $exception->truncated = true;
+
+        return $exception;
     }
 
     public static function unsafeUrl(string $reason): self

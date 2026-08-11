@@ -12,6 +12,13 @@ use Illuminate\Support\Facades\Log;
 
 class GeminiRecipeExtractor implements RecipeExtractor
 {
+    /**
+     * Upper bound for the automatic retry that doubles maxOutputTokens when a
+     * response gets cut off, so a single very long recipe can't spiral into
+     * unbounded cost.
+     */
+    private const MAX_TOKEN_CAP = 8192;
+
     public function __construct(
         private readonly string $apiKey,
         private readonly string $model,
@@ -26,6 +33,28 @@ class GeminiRecipeExtractor implements RecipeExtractor
             throw RecipeExtractionException::missingApiKey();
         }
 
+        $maxTokens = $this->maxOutputTokens;
+
+        while (true) {
+            try {
+                return ExtractedRecipe::fromArray($this->decodeCandidate($this->request($source, $maxTokens)));
+            } catch (RecipeExtractionException $e) {
+                if (! $e->truncated || $maxTokens >= self::MAX_TOKEN_CAP) {
+                    throw $e;
+                }
+
+                $maxTokens = min($maxTokens * 2, self::MAX_TOKEN_CAP);
+
+                Log::info('Retrying Gemini extraction with a higher token limit', ['max_output_tokens' => $maxTokens]);
+            }
+        }
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function request(ScanSource $source, int $maxTokens): ?array
+    {
         $endpoint = sprintf('%s/models/%s:generateContent', rtrim($this->baseUrl, '/'), $this->model);
 
         $startedAt = microtime(true);
@@ -34,7 +63,7 @@ class GeminiRecipeExtractor implements RecipeExtractor
             $response = Http::timeout($this->timeout)
                 ->withHeaders(['x-goog-api-key' => $this->apiKey])
                 ->acceptJson()
-                ->post($endpoint, $this->payload($source));
+                ->post($endpoint, $this->payload($source, $maxTokens));
         } catch (ConnectionException $e) {
             $this->logExtraction($startedAt, error: $e->getMessage());
             throw RecipeExtractionException::requestFailed($e->getMessage());
@@ -46,13 +75,13 @@ class GeminiRecipeExtractor implements RecipeExtractor
             throw RecipeExtractionException::requestFailed('HTTP '.$response->status().' '.$response->body());
         }
 
-        return ExtractedRecipe::fromArray($this->decodeCandidate($response->json()));
+        return $response->json();
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function payload(ScanSource $source): array
+    private function payload(ScanSource $source, int $maxTokens): array
     {
         return [
             'contents' => [[
@@ -70,7 +99,7 @@ class GeminiRecipeExtractor implements RecipeExtractor
                 'responseMimeType' => 'application/json',
                 'responseSchema' => $this->schema(),
                 'temperature' => 0.1,
-                'maxOutputTokens' => $this->maxOutputTokens,
+                'maxOutputTokens' => $maxTokens,
             ],
         ];
     }
