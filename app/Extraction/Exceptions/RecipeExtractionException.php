@@ -21,6 +21,11 @@ class RecipeExtractionException extends RuntimeException
         return new self("Recipe extraction returned an invalid payload: {$message}");
     }
 
+    public static function responseTruncated(): self
+    {
+        return new self('Recipe extraction was cut off before it finished (the recipe may be too long). Try again or use a shorter source.');
+    }
+
     public static function unsafeUrl(string $reason): self
     {
         return new self("The URL could not be fetched: {$reason}");

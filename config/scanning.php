@@ -26,7 +26,7 @@ return [
     'gemini' => [
         'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
         'timeout' => (int) env('GEMINI_TIMEOUT', 60),
-        'max_output_tokens' => (int) env('GEMINI_MAX_OUTPUT_TOKENS', 2048),
+        'max_output_tokens' => (int) env('GEMINI_MAX_OUTPUT_TOKENS', 4096),
     ],
 
     /*

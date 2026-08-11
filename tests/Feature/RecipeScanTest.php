@@ -330,6 +330,65 @@ it('driver throws when the http request fails', function () {
     $extractor->extract(ScanSource::fromContents('bytes', 'image/png'));
 })->throws(RecipeExtractionException::class);
 
+it('driver joins responses split across multiple text parts', function () {
+    $json = json_encode(sampleRecipePayload());
+    $midpoint = (int) floor(strlen($json) / 2);
+
+    Http::fake([
+        '*' => Http::response([
+            'candidates' => [[
+                'content' => [
+                    'parts' => [
+                        ['text' => substr($json, 0, $midpoint)],
+                        ['text' => substr($json, $midpoint)],
+                    ],
+                ],
+                'finishReason' => 'STOP',
+            ]],
+        ]),
+    ]);
+
+    $extractor = new GeminiRecipeExtractor('test-key', 'gemini-2.0-flash', 'https://example.test/v1beta', 30);
+
+    $recipe = $extractor->extract(ScanSource::fromContents('bytes', 'image/png'));
+
+    expect($recipe->title)->toBe('Tomato Soup');
+});
+
+it('driver strips a stray markdown code fence around the JSON', function () {
+    $json = "```json\n".json_encode(sampleRecipePayload())."\n```";
+
+    Http::fake([
+        '*' => Http::response([
+            'candidates' => [[
+                'content' => ['parts' => [['text' => $json]]],
+                'finishReason' => 'STOP',
+            ]],
+        ]),
+    ]);
+
+    $extractor = new GeminiRecipeExtractor('test-key', 'gemini-2.0-flash', 'https://example.test/v1beta', 30);
+
+    $recipe = $extractor->extract(ScanSource::fromContents('bytes', 'image/png'));
+
+    expect($recipe->title)->toBe('Tomato Soup');
+});
+
+it('driver raises a clear error when the response was truncated by the token limit', function () {
+    Http::fake([
+        '*' => Http::response([
+            'candidates' => [[
+                'content' => ['parts' => [['text' => '{"title": "Tomato Soup", "ingredients": [']]],
+                'finishReason' => 'MAX_TOKENS',
+            ]],
+        ]),
+    ]);
+
+    $extractor = new GeminiRecipeExtractor('test-key', 'gemini-2.0-flash', 'https://example.test/v1beta', 30);
+
+    $extractor->extract(ScanSource::fromContents('bytes', 'image/png'));
+})->throws(RecipeExtractionException::class, 'cut off');
+
 test('a user can view their scan history', function () {
     $user = User::factory()->create();
     $scan = RecipeScan::factory()->for($user)->create();

@@ -81,19 +81,52 @@ class GeminiRecipeExtractor implements RecipeExtractor
      */
     private function decodeCandidate(?array $body): array
     {
-        $text = data_get($body, 'candidates.0.content.parts.0.text');
+        $finishReason = data_get($body, 'candidates.0.finishReason');
 
-        if (! is_string($text) || trim($text) === '') {
+        $parts = data_get($body, 'candidates.0.content.parts', []);
+        $text = collect($parts)->pluck('text')->filter(fn ($part) => is_string($part))->implode('');
+
+        if (trim($text) === '') {
             throw RecipeExtractionException::invalidPayload('The model returned no content.');
         }
 
-        $decoded = json_decode($text, true);
+        $decoded = json_decode($this->stripCodeFences($text), true);
 
         if (! is_array($decoded)) {
+            if ($finishReason === 'MAX_TOKENS') {
+                $this->logTruncation($text, $finishReason);
+                throw RecipeExtractionException::responseTruncated();
+            }
+
+            $this->logTruncation($text, $finishReason);
             throw RecipeExtractionException::invalidPayload('The model response was not valid JSON.');
         }
 
         return $decoded;
+    }
+
+    /**
+     * Some models occasionally wrap JSON in a ```json fenced code block even
+     * when a strict JSON response type is requested; strip it defensively.
+     */
+    private function stripCodeFences(string $text): string
+    {
+        $text = trim($text);
+
+        if (str_starts_with($text, '```')) {
+            $text = preg_replace('/^```[a-zA-Z]*\n|\n```$/', '', $text) ?? $text;
+        }
+
+        return trim($text);
+    }
+
+    private function logTruncation(string $text, ?string $finishReason): void
+    {
+        Log::warning('Gemini extraction returned undecodable JSON', [
+            'finish_reason' => $finishReason,
+            'response_length' => strlen($text),
+            'response_tail' => substr($text, -200),
+        ]);
     }
 
     private function prompt(ScanSource $source): string
