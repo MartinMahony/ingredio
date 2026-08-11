@@ -110,6 +110,35 @@ it('processes a scan and stores the extracted recipe', function () {
     Storage::disk('local')->assertMissing('scans/recipe.png');
 });
 
+it('normalizes ALL CAPS and lowercase titles to Title Case when storing a scan', function () {
+    Storage::fake('local');
+
+    $payload = sampleRecipePayload();
+    $payload['title'] = 'THAI RED   CHICKEN CURRY';
+
+    Http::fake([
+        '*' => Http::response(fakeGeminiResponse($payload)),
+    ]);
+
+    $user = User::factory()->create();
+    Storage::disk('local')->put('scans/recipe.png', 'fake-image-bytes');
+
+    $scan = RecipeScan::factory()->for($user)->create([
+        'source_disk' => 'local',
+        'source_path' => 'scans/recipe.png',
+    ]);
+
+    (new ProcessRecipeScan($scan))->handle(
+        app(RecipeExtractor::class),
+        app(StoreExtractedRecipe::class),
+        app(UrlContentFetcher::class),
+    );
+
+    $recipe = Recipe::find($scan->refresh()->recipe_id);
+
+    expect($recipe->title)->toBe('Thai Red Chicken Curry');
+});
+
 it('leaves nutrition fields null when not stated in the source', function () {
     Storage::fake('local');
 

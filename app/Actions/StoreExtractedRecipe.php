@@ -6,6 +6,7 @@ use App\Extraction\Data\ExtractedRecipe;
 use App\Models\Recipe;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 // @phpstan-ignore-next-line
 
@@ -23,7 +24,7 @@ class StoreExtractedRecipe
         return DB::transaction(function () use ($user, $data, $attributes): Recipe {
             $recipe = $user->recipes()->create([
                 ...[
-                    'title' => $data->title,
+                    'title' => $this->normalizeTitle($data->title),
                     'description' => $data->description,
                     'servings' => $data->servings,
                     'prep_minutes' => $data->prepMinutes,
@@ -73,5 +74,14 @@ class StoreExtractedRecipe
         }
 
         return (int) $data->prepMinutes + (int) $data->cookMinutes;
+    }
+
+    /**
+     * Normalize scanned titles to Title Case, since sources vary wildly
+     * (ALL CAPS, all lowercase, etc.) and shouldn't be trusted verbatim.
+     */
+    private function normalizeTitle(string $title): string
+    {
+        return Str::title(Str::squish($title));
     }
 }
