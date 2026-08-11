@@ -263,44 +263,46 @@ $closePreview = function () {
             @foreach ($this->recipes as $recipe)
                 <div wire:key="recipe-{{ $recipe->id }}"
                     class="group relative flex flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
-                    <input type="checkbox" wire:model="selected" value="{{ $recipe->id }}"
-                        class="absolute left-3 top-3 z-10 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-600"
-                        aria-label="Select {{ $recipe->title }}">
+                    <div class="flex items-start gap-3">
+                        <input type="checkbox" wire:model.live="selected" value="{{ $recipe->id }}"
+                            class="mt-1 h-4 w-4 flex-none accent-orange-600 rounded border-gray-300 text-orange-600 focus:ring-orange-600"
+                            aria-label="Select {{ $recipe->title }}">
 
-                    <a href="{{ route('recipes.show', $recipe) }}" wire:navigate class="flex-1 pl-8">
-                        <h2 class="flex items-start gap-2 pr-6 text-base font-semibold group-hover:text-orange-600">
-                            @if ($recipe->is_favorite)
-                                <svg class="mt-0.5 h-4 w-4 flex-none text-orange-500" viewBox="0 0 20 20" fill="currentColor"
-                                    aria-label="Favorite">
-                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                </svg>
-                            @endif
-                            <span>{{ $recipe->title }}</span>
-                        </h2>
+                        <a href="{{ route('recipes.show', $recipe) }}" wire:navigate class="min-w-0 flex-1">
+                            <h2 class="flex items-start gap-2 pr-16 text-base font-semibold group-hover:text-orange-600">
+                                @if ($recipe->is_favorite)
+                                    <svg class="mt-0.5 h-4 w-4 flex-none text-orange-500" viewBox="0 0 20 20" fill="currentColor"
+                                        aria-label="Favorite">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                    </svg>
+                                @endif
+                                <span class="truncate">{{ $recipe->title }}</span>
+                            </h2>
 
-                        @if ($recipe->description)
-                            <p class="mt-1 line-clamp-2 text-sm text-gray-500 dark:text-gray-400">
-                                {{ $recipe->description }}
-                            </p>
-                        @endif
+                            @if ($recipe->description)
+                                <p class="mt-1 line-clamp-2 text-sm text-gray-500 dark:text-gray-400">
+                                    {{ $recipe->description }}
+                                </p>
+                            @endif
 
-                        <div class="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
-                            @if ($recipe->cuisine)
-                                <span>{{ $recipe->cuisine }}</span>
-                            @endif
-                            @if ($recipe->difficulty)
-                                <span>{{ $recipe->difficulty->label() }}</span>
-                            @endif
-                            @if ($recipe->total_minutes)
-                                <span>{{ $recipe->total_minutes }} min</span>
-                            @endif
-                            <span>{{ $recipe->ingredients_count }} {{ Str::plural('ingredient', $recipe->ingredients_count) }}</span>
-                            <span>{{ $recipe->steps_count }} {{ Str::plural('step', $recipe->steps_count) }}</span>
-                            @if ($recipe->last_cooked_at)
-                                <span>Cooked {{ $recipe->last_cooked_at->diffForHumans() }}</span>
-                            @endif
-                        </div>
-                    </a>
+                            <div class="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                                @if ($recipe->cuisine)
+                                    <span>{{ $recipe->cuisine }}</span>
+                                @endif
+                                @if ($recipe->difficulty)
+                                    <span>{{ $recipe->difficulty->label() }}</span>
+                                @endif
+                                @if ($recipe->total_minutes)
+                                    <span>{{ $recipe->total_minutes }} min</span>
+                                @endif
+                                <span>{{ $recipe->ingredients_count }} {{ Str::plural('ingredient', $recipe->ingredients_count) }}</span>
+                                <span>{{ $recipe->steps_count }} {{ Str::plural('step', $recipe->steps_count) }}</span>
+                                @if ($recipe->last_cooked_at)
+                                    <span>Cooked {{ $recipe->last_cooked_at->diffForHumans() }}</span>
+                                @endif
+                            </div>
+                        </a>
+                    </div>
 
                     <div class="absolute right-3 top-3 flex items-center gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
                         <button type="button" wire:click="openPreview({{ $recipe->id }})"

@@ -52,3 +52,14 @@ test('verified users can access protected routes', function () {
         ->get(route('dashboard'))
         ->assertOk();
 });
+
+test('the verification notice page renders with the auth layout', function () {
+    $user = User::factory()->unverified()->create();
+
+    $this->actingAs($user)
+        ->get(route('verification.notice'))
+        ->assertOk()
+        ->assertSee('Verify your email')
+        ->assertSee('Resend verification email')
+        ->assertSee('Ingredio');
+});

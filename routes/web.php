@@ -18,9 +18,9 @@ Route::middleware('guest')->group(function () {
     Volt::route('reset-password/{token}', 'auth.reset-password')->name('password.reset');
 });
 
-Route::get('/email/verify', function () {
-    return view('livewire.auth.verify-email');
-})->middleware('auth')->name('verification.notice');
+Route::middleware('auth')->group(function () {
+    Volt::route('email/verify', 'auth.verify-email')->name('verification.notice');
+});
 
 Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
     $request->fulfill();
