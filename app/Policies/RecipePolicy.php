@@ -20,7 +20,7 @@ class RecipePolicy
      */
     public function view(User $user, Recipe $recipe): bool
     {
-        return $user->id === $recipe->user_id;
+        return $user->id === $recipe->user_id || $recipe->is_public;
     }
 
     /**

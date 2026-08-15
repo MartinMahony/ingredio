@@ -34,6 +34,14 @@
                         class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
                         Collections
                     </a>
+                    <a href="{{ route('discover.index') }}" wire:navigate
+                        class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                        Discover
+                    </a>
+                    <a href="{{ route('saved.index') }}" wire:navigate
+                        class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                        Saved
+                    </a>
                     <a href="{{ route('profile') }}" wire:navigate
                         class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
                         {{ auth()->user()?->name }}

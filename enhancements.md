@@ -119,6 +119,107 @@
 
 ---
 
+## Wave 6 — P2: Public Recipes & Discover
+
+> Goal: let users optionally mark their own recipes as public, browse other users' public recipes in a
+> "Discover" tab, and save (bookmark) ones they like without forking them — while keeping mutation
+> permissions (edit/delete) strictly owner-only and keeping legal/privacy exposure bounded.
+>
+> Decisions made up front (see brainstorm in conversation history for full reasoning):
+> - **Copyright**: any recipe can be made public, but recipes derived from a URL/image/PDF scan must show
+>   a visible source/attribution link when public (no "publish scraped text with no credit").
+> - **Audience**: Discover is for logged-in users only — not open to the public internet, not crawlable.
+> - **Save vs. copy**: "Save" is a lightweight bookmark-by-reference (new `recipe_saves` pivot), distinct
+>   from the existing "Duplicate" action (a full independent fork). Both are offered; they serve different
+>   intents. A saved recipe gracefully disappears/shows "no longer available" if the author unpublishes or
+>   deletes it — it does not error.
+> - `notes` (personal cooking notes) are never exposed on a public recipe, even to someone who saved it.
+> - This is separate from the existing private link-sharing feature (`share_token`/`shared_at`,
+>   `/shared/{token}`) — that stays as-is for unlisted, no-auth link sharing of a single recipe.
+
+### Phase 1 — Public toggle & policy
+- [x] Add `is_public` boolean (default `false`) and `published_at` to `recipes` via migration, with a
+  composite `(is_public, created_at)` index for the future Discover query.
+  - File: `database/migrations/2026_08_11_131659_add_is_public_to_recipes_table.php`.
+- [x] Add `Recipe::makePublic()` / `Recipe::makePrivate()` / `Recipe::wasImported()` helpers (mirroring
+  `toggleFavorite()`/`enableSharing()`).
+  - File: `app/Models/Recipe.php`.
+- [x] Update `RecipePolicy::view` to allow `$recipe->is_public` in addition to ownership. `update`/`delete`
+  remain owner-only — no change there.
+  - File: `app/Policies/RecipePolicy.php`.
+- [x] Add a Public/Private toggle on `recipes.show` (owner-only, near Favorite/Mark cooked), with a
+  confirmation on the "make public" direction explaining what it means (visible to every user; personal
+  notes stay private; scanned recipes are credited).
+- [x] Reuse the existing `duplicate()` action for "Copy to my recipes" on someone else's public recipe —
+  now explicitly sets `user_id` to the copier (not the original author) and resets `is_public`,
+  `published_at`, `is_favorite`, and `last_cooked_at` on the copy. Button label switches to "Copy to my
+  recipes" for non-owners.
+  - File: `resources/views/livewire/recipes/show.blade.php`.
+- [x] Show a visible source/attribution link on recipes where `wasImported()` is true (URL link if
+  available, otherwise "Imported from a photo or PDF").
+- [x] Gate owner-only sections (Favorite, Mark cooked, Public toggle, Edit, Delete, Collections, Public
+  share link, personal Notes) behind an `$isOwner` check so a non-owner viewing a public recipe only sees
+  the recipe content, a "shared by another user" notice, and "Copy to my recipes".
+- [x] Tests: policy visibility (owner/public/private-other-user), toggle authorization, duplicate-from-public
+  ownership, notes/owner-controls hidden from non-owners, attribution rendering.
+  - File: `tests/Feature/RecipeTest.php`.
+
+### Phase 2 — Discover tab
+- [x] New `discover` route/Volt component: paginated (12/page, via Volt's `usesPagination()`) browse of
+  other users' public recipes (`Recipe::where('is_public', true)->where('user_id', '!=', auth()->id())`
+  — a user's own public recipes are deliberately excluded, since they already manage those from "My
+  Recipes"; Discover is for finding recipes you don't already have access to), with search
+  (title/ingredient) and cuisine filters, plus sort (newest/oldest/title A–Z). Tag filtering was
+  intentionally left out of this phase — tags are per-user (`tags.user_id`), so a cross-user tag filter
+  needs its own design rather than reusing the dashboard's list.
+  - File: `resources/views/livewire/discover/index.blade.php`, `routes/web.php`.
+- [x] Composite index on `(is_public, created_at)` for the feed query (added in Phase 1's migration).
+- [x] Show minimal author attribution (`$recipe->user->name`) only — no email, no other PII.
+- [x] Nav entry alongside Recipes/Collections.
+  - File: `resources/views/layouts/app.blade.php`.
+- [x] Rate-limit "make public" toggles (20/hour per user) — "make private" is unlimited since it's the safe
+  direction. Reuses the inline `RateLimiter` facade pattern already used by login/register.
+  - File: `resources/views/livewire/recipes/show.blade.php`.
+- [x] Tests: pagination (page 1 vs. page 2 contents), cuisine/search filtering, author name shown, private
+  recipes never appear, notes never leak, publish rate limit enforced.
+  - Files: `tests/Feature/DiscoverTest.php`, `tests/Feature/RecipeTest.php`.
+
+### Phase 3 — Save (bookmark)
+- [x] `recipe_saves` pivot table (`user_id`, `recipe_id`, timestamps, unique on the pair, cascade-deletes on
+  either side).
+  - File: `database/migrations/2026_08_11_152210_create_recipe_saves_table.php`.
+- [x] `User::savedRecipes()` / `User::hasSaved()`.
+  - File: `app/Models/User.php`.
+- [x] `Save`/`Unsave` actions on Discover cards and `recipes.show` for public recipes (never shown/allowed
+  on your own recipe — `abort_if($recipe->user_id === auth()->id(), 403)` as a server-side guard, not just
+  a hidden button).
+  - Files: `resources/views/livewire/recipes/show.blade.php`, `resources/views/livewire/discover/index.blade.php`.
+- [x] Dedicated "Saved" page (`saved.index`), distinct from "My Recipes" and Discover, with a nav entry.
+  - File: `resources/views/livewire/saved/index.blade.php`, `routes/web.php`, `resources/views/layouts/app.blade.php`.
+- [x] Graceful handling of a since-unpublished/deleted save: the Saved list query filters to
+  `is_public = true`, so an unpublished recipe just silently drops out of the list (no error, no dead
+  link) — and reappears automatically if the owner re-publishes it later, since the bookmark row itself
+  is untouched. An actually-deleted recipe cascade-deletes its `recipe_saves` row via the FK. No explicit
+  "no longer available" placeholder was built — the silent-filter behaviour already satisfies "graceful"
+  without the extra complexity of tracking why an item disappeared.
+- [x] Decision: a saved (not copied) recipe is **not** addable to the user's own Collections in this phase.
+  Collections currently assume a straightforward ownership model; wiring in by-reference recipes you don't
+  own is a bigger design question (e.g. what happens to a Collection entry when the reference disappears)
+  better handled deliberately later if there's real demand, rather than bolted on here.
+- [x] Tests: save/unsave from both `recipes.show` and Discover, can't save your own or a private recipe,
+  saving twice doesn't duplicate, Saved page scoping (only the current user's saves, author shown),
+  unpublish/delete graceful degradation, removing a save from the Saved page itself.
+  - File: `tests/Feature/SavedRecipeTest.php`.
+
+### Phase 4 — Optional / later
+- [ ] Public author profile page (their public recipes only).
+- [ ] Reporting/flagging + lightweight admin moderation for public content.
+- [ ] Consider a dedicated public "display name" separate from the account's real `name`, if this grows
+  toward a more social feature set (retrofitting later means a migration + UX change for existing users,
+  so decide deliberately rather than by default).
+
+---
+
 ## Notes
 
 - Items explicitly dropped in `scope.md` (export, ingredient auto-scaling, source retention) are not re-proposed here.

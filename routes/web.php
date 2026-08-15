@@ -57,4 +57,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Volt::route('collections', 'collections.index')->name('collections.index');
     Volt::route('collections/{collection}', 'collections.show')->name('collections.show');
+
+    Volt::route('discover', 'discover.index')->name('discover.index');
+    Volt::route('saved', 'saved.index')->name('saved.index');
 });

@@ -31,6 +31,7 @@ use Illuminate\Support\Str;
     'notes',
     'is_favorite',
     'last_cooked_at',
+    'is_public',
     'status',
     'extracted_at',
 ])]
@@ -55,6 +56,8 @@ class Recipe extends Model
             'fat_grams' => 'decimal:1',
             'is_favorite' => 'boolean',
             'last_cooked_at' => 'datetime',
+            'is_public' => 'boolean',
+            'published_at' => 'datetime',
             'extracted_at' => 'datetime',
             'shared_at' => 'datetime',
         ];
@@ -121,6 +124,28 @@ class Recipe extends Model
     public function markCooked(): void
     {
         $this->forceFill(['last_cooked_at' => now()])->save();
+    }
+
+    public function makePublic(): void
+    {
+        $this->forceFill([
+            'is_public' => true,
+            'published_at' => $this->published_at ?? now(),
+        ])->save();
+    }
+
+    public function makePrivate(): void
+    {
+        $this->forceFill(['is_public' => false])->save();
+    }
+
+    /**
+     * Whether this recipe was imported from an external source (rather than
+     * entered manually), and so should credit that source when shown publicly.
+     */
+    public function wasImported(): bool
+    {
+        return in_array($this->source_type, ['url', 'image', 'pdf'], true);
     }
 
     /**

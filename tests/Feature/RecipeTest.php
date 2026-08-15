@@ -237,6 +237,131 @@ test('a user cannot view or modify another users recipe', function () {
         ->assertForbidden();
 });
 
+test('a user can make and unmake their recipe public', function () {
+    $user = User::factory()->create();
+    $recipe = Recipe::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    Volt::test('recipes.show', ['recipe' => $recipe])->call('togglePublic');
+
+    expect($recipe->fresh())
+        ->is_public->toBeTrue()
+        ->published_at->not->toBeNull();
+
+    Volt::test('recipes.show', ['recipe' => $recipe])->call('togglePublic');
+
+    expect($recipe->fresh()->is_public)->toBeFalse();
+});
+
+test('a user cannot make another users public recipe private (or vice versa)', function () {
+    $recipe = Recipe::factory()->create(['is_public' => true]);
+
+    $this->actingAs(User::factory()->create());
+
+    Volt::test('recipes.show', ['recipe' => $recipe])
+        ->call('togglePublic')
+        ->assertForbidden();
+
+    expect($recipe->fresh()->is_public)->toBeTrue();
+});
+
+test('any user can view a public recipe belonging to someone else', function () {
+    $recipe = Recipe::factory()->create(['is_public' => true, 'title' => 'Public Pancakes']);
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('recipes.show', $recipe))
+        ->assertOk()
+        ->assertSee('Public Pancakes')
+        ->assertSee('This is a public recipe shared by another Ingredio user.');
+});
+
+test('a private recipe stays hidden from other users even if is_public was never set', function () {
+    $recipe = Recipe::factory()->create(['is_public' => false]);
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('recipes.show', $recipe))
+        ->assertForbidden();
+});
+
+test('owner-only controls and notes are hidden from a non-owner viewing a public recipe', function () {
+    $recipe = Recipe::factory()->create([
+        'is_public' => true,
+        'notes' => 'My secret family trick',
+    ]);
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('recipes.show', $recipe))
+        ->assertOk()
+        ->assertDontSee('My secret family trick')
+        ->assertDontSee('Make private')
+        ->assertDontSee('Delete this recipe')
+        ->assertSee('Copy to my recipes');
+});
+
+test('a non-owner copying a public recipe becomes the owner of the copy', function () {
+    $author = User::factory()->create();
+    $recipe = Recipe::factory()->for($author)->create(['is_public' => true, 'title' => 'Pancakes']);
+    $recipe->ingredients()->create(['position' => 0, 'name' => 'Flour']);
+
+    $viewer = User::factory()->create();
+    $this->actingAs($viewer);
+
+    Volt::test('recipes.show', ['recipe' => $recipe])->call('duplicate');
+
+    $copy = Recipe::where('title', 'Copy of Pancakes')->sole();
+
+    expect($copy->user_id)->toBe($viewer->id)
+        ->and($copy->user_id)->not->toBe($author->id)
+        ->and($copy->is_public)->toBeFalse()
+        ->and($copy->ingredients)->toHaveCount(1);
+});
+
+test('a user cannot view (or copy) a private recipe belonging to someone else', function () {
+    $recipe = Recipe::factory()->create(['is_public' => false]);
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('recipes.show', $recipe))
+        ->assertForbidden();
+
+    $this->assertDatabaseCount('recipes', 1);
+});
+
+test('making recipes public is rate-limited', function () {
+    $user = User::factory()->create();
+    $recipes = Recipe::factory()->for($user)->count(21)->create();
+
+    $this->actingAs($user);
+
+    foreach ($recipes->take(20) as $recipe) {
+        Volt::test('recipes.show', ['recipe' => $recipe])->call('togglePublic');
+    }
+
+    expect($recipes->take(20)->every(fn ($recipe) => $recipe->fresh()->is_public))->toBeTrue();
+
+    $blocked = $recipes->last();
+
+    Volt::test('recipes.show', ['recipe' => $blocked])
+        ->call('togglePublic')
+        ->assertHasErrors('publish');
+
+    expect($blocked->fresh()->is_public)->toBeFalse();
+});
+
+test('an imported public recipe shows its source attribution', function () {
+    $recipe = Recipe::factory()->create([
+        'is_public' => true,
+        'source_type' => 'url',
+        'source_url' => 'https://example.test/recipe',
+    ]);
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('recipes.show', $recipe))
+        ->assertOk()
+        ->assertSee('Imported from')
+        ->assertSee('https://example.test/recipe');
+});
+
 test('recipe description and notes are limited to 10000 characters', function () {
     $this->actingAs(User::factory()->create());
 
