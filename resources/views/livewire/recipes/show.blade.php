@@ -437,23 +437,26 @@ $togglePublic = function () {
                     <p class="text-sm text-gray-500 dark:text-gray-400">No ingredients listed.</p>
                 @else
                     @php($ingredientGroups = $recipe->ingredients->groupBy('group'))
-                    <div class="space-y-4 text-sm">
+                    <div class="grid grid-cols-[auto_auto_1fr] gap-x-3 gap-y-4 text-sm">
                         @foreach ($ingredientGroups as $group => $items)
                             @if ($group)
-                                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ $group }}</h3>
+                                <h3 class="col-start-2 col-span-2 text-sm font-medium text-gray-500 dark:text-gray-400">
+                                    {{ $group }}
+                                </h3>
                             @endif
-                            <ul class="space-y-1.5">
+                            <ul class="col-span-3 grid grid-cols-subgrid gap-y-1.5">
                                 @foreach ($items as $ingredient)
-                                    <li class="flex items-start gap-3">
+                                    <li class="col-span-3 grid grid-cols-subgrid">
                                         <input type="checkbox" x-show="cooking" x-model="checked"
                                             value="ingredient-{{ $ingredient->id }}"
-                                            class="mt-0.5 h-4 w-4 flex-none rounded border-gray-300 text-orange-600 focus:ring-orange-600"
+                                            class="col-start-1 mt-0.5 h-4 w-4 self-start rounded border-gray-300 text-orange-600 focus:ring-orange-600"
                                             aria-label="Mark {{ $ingredient->name }} as checked">
-                                        <span class="whitespace-nowrap font-medium"
+                                        <span class="col-start-2 whitespace-nowrap font-medium"
                                             x-bind:class="{ 'line-through opacity-50': checked.includes('ingredient-{{ $ingredient->id }}') }">
                                             {{ trim($ingredient->quantity . ' ' . $ingredient->unit) }}
                                         </span>
-                                        <span x-bind:class="{ 'line-through opacity-50': checked.includes('ingredient-{{ $ingredient->id }}') }">
+                                        <span class="col-start-3"
+                                            x-bind:class="{ 'line-through opacity-50': checked.includes('ingredient-{{ $ingredient->id }}') }">
                                             {{ $ingredient->name }}
                                             @if ($ingredient->note)
                                                 <span class="text-gray-500 dark:text-gray-400">({{ $ingredient->note }})</span>
