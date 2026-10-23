@@ -339,6 +339,26 @@ sharing the droplet with other apps. Decisions made together:
 - [x] Tests (3): mismatch throws and is retryable, matching size processes
       normally, `source_size = null` (pre-existing rows) skips the check.
 
+### Deployment update - PHP 8.5.12
+- [x] Added `nixpacks.toml` to select PHP **8.5.12** and its matching Composer
+      package from Nixpkgs security revision `c53532a938651ed45ebef072c8da6e74256e7072`.
+      This fixes CVE-2026-109618 / CVE-2026-109619; Nixpacks' automatic PHP
+      selection otherwise still resolves this project to PHP 8.4.2.
+- [x] Preserved the Nixpacks base image/start command, custom nginx template,
+      and original non-PHP package snapshot. Node 22 is selected for the existing
+      Vite 8 build. Composer application requirements and lockfiles are unchanged.
+- [x] Build-time checks reject anything other than PHP 8.5.12 for CLI/FPM and
+      check production Composer platform requirements after installation.
+- [x] Added a public `/up` health-check regression test.
+- [ ] **Production rollout (manual)**: retain the current Coolify image reference
+      for emergency rollback, then rebuild **both** web and queue-worker resources
+      without the build cache. Keep the worker start-command override, environment
+      variables, and shared upload mount unchanged. Check `php -v` / `php-fpm -v`
+      in the web container, `php -v` in the worker, `/up`, login, and one recipe
+      scan. Restarting an existing container or running `queue:restart` alone does
+      not upgrade PHP. The old PHP 8.4.2 image is vulnerable and is not a safe
+      long-term rollback target.
+
 ---
 
 ## 6. Cross-Cutting Concerns

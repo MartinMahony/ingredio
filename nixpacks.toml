@@ -1,0 +1,24 @@
+# Retain the existing Nixpacks toolchain; replace only PHP and its Composer package.
+[phases.setup]
+nixpkgsArchive = "e24b4c09e963677b1beea49d411cd315a024ad3a"
+nixPkgs = [
+    '''(let
+        phpPackages = import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/c53532a938651ed45ebef072c8da6e74256e7072.tar.gz") {};
+    in phpPackages.buildEnv {
+        name = "php-8.5.12-runtime";
+        paths = [ phpPackages.php85 phpPackages.php85.packages.composer ];
+    })''',
+    "nginx",
+    "libmysqlclient",
+    "nodejs_22",
+    "npm-9_x",
+]
+
+[phases.install]
+cmds = [
+    "php -v",
+    '''test "$(php -r 'echo PHP_VERSION;')" = "8.5.12"''',
+    "php-fpm -v | grep -F 'PHP 8.5.12 (fpm-fcgi)'",
+    "...",
+    "composer check-platform-reqs --no-dev",
+]
